@@ -24,3 +24,4 @@ Thumbs.db
 dist/
 build/
 *.pyc
+bin/

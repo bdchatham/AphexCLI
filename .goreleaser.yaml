@@ -1,0 +1,108 @@
+project_name: aphex
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    main: ./cmd/aphex
+    binary: aphex
+    ldflags:
+      - -s -w -X main.Version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+release:
+  github:
+    owner: bdchatham
+    name: AphexCLI
+  name_template: "Aphex CLI {{.Version}}"
+  header: |
+    ## Aphex CLI {{.Version}}
+    
+    CLI tool for managing Tekton pipelines on the Arbiter platform.
+  footer: |
+    ## Installation
+    
+    ### Homebrew
+    ```bash
+    brew tap bdchatham/aphex
+    brew install aphex
+    ```
+    
+    ### Manual Installation
+    
+    #### macOS
+    ```bash
+    # Intel Macs
+    curl -L -o aphex https://github.com/bdchatham/AphexCLI/releases/download/{{.Tag}}/aphex_Darwin_x86_64.tar.gz
+    tar -xzf aphex_Darwin_x86_64.tar.gz
+    sudo mv aphex /usr/local/bin/
+    
+    # Apple Silicon Macs  
+    curl -L -o aphex https://github.com/bdchatham/AphexCLI/releases/download/{{.Tag}}/aphex_Darwin_arm64.tar.gz
+    tar -xzf aphex_Darwin_arm64.tar.gz
+    sudo mv aphex /usr/local/bin/
+    ```
+    
+    #### Linux
+    ```bash
+    # x86_64
+    curl -L -o aphex https://github.com/bdchatham/AphexCLI/releases/download/{{.Tag}}/aphex_Linux_x86_64.tar.gz
+    tar -xzf aphex_Linux_x86_64.tar.gz
+    sudo mv aphex /usr/local/bin/
+    
+    # ARM64
+    curl -L -o aphex https://github.com/bdchatham/AphexCLI/releases/download/{{.Tag}}/aphex_Linux_arm64.tar.gz
+    tar -xzf aphex_Linux_arm64.tar.gz
+    sudo mv aphex /usr/local/bin/
+    ```
+    
+    ## Usage
+    ```bash
+    # Authenticate with the platform
+    aphex auth login
+    
+    # List pipelines
+    aphex pipeline list
+    
+    # Create a pipeline
+    aphex pipeline create my-pipeline --file pipeline.yaml
+    
+    # Delete a pipeline
+    aphex pipeline delete my-pipeline
+    ```

@@ -2,29 +2,96 @@
 
 ## Deployment
 
-[Describe deployment procedures]
+### Building the CLI
+```bash
+# Build for current platform
+make build
+
+# Build for all platforms
+make build-all
+```
+
+### Release Process
+1. Update `VERSION` file with semantic version
+2. Run `make release` to create GitHub release
+
+The release process automatically:
+- Runs tests
+- Builds cross-platform binaries
+- Generates checksums
+- Creates git tag
+- Publishes GitHub release
 
 ## Monitoring
 
-[Describe monitoring setup and key metrics]
+### Build Status
+- GitHub Actions (if configured) for automated builds
+- Manual testing on target platforms
+
+### User Adoption
+- GitHub release download metrics
+- Issue reports and feature requests
 
 ## Alerting
 
-[Describe alerting configuration and response procedures]
+No automated alerting configured. Issues reported via:
+- GitHub Issues
+- Platform team communication channels
 
 ## Runbooks
 
 ### Common Issues
 
-[Document common issues and their solutions]
+#### Authentication Failures
+**Symptom**: `aphex auth login` fails with OIDC errors
+
+**Resolution**:
+1. Verify kubelogin installed: `kubelogin --version`
+2. Check Dex endpoint: `curl https://dex.home.local`
+3. Clear existing kubeconfig context: `kubectl config delete-context aphex`
+4. Re-run: `aphex auth login`
+
+#### Permission Denied Errors
+**Symptom**: Commands fail with 403 Forbidden
+
+**Resolution**:
+1. Check current namespace: `kubectl config view --minify`
+2. Verify RBAC permissions: `kubectl auth can-i create pipelines`
+3. Contact platform administrator for group membership
+
+#### Pipeline Creation Failures
+**Symptom**: `aphex pipeline create` fails
+
+**Resolution**:
+1. Validate YAML file: `kubectl apply --dry-run=client -f pipeline.yaml`
+2. Check namespace exists: `kubectl get namespace <namespace>`
+3. Verify Tekton is installed: `kubectl get crd pipelines.tekton.dev`
 
 ### Troubleshooting
 
-[Provide troubleshooting guides]
+#### Debug Mode
+Add `--verbose` flag to any command for detailed output
+
+#### Log Analysis
+Check kubectl logs for related errors:
+```bash
+kubectl logs -n tekton-pipelines -l app=tekton-pipelines-controller
+```
 
 ## Maintenance
 
-[Describe regular maintenance tasks]
+### Version Updates
+- Update `VERSION` file for new releases
+- Test on all supported platforms before release
+- Update installation instructions if needed
+
+### Dependency Updates
+- Regular `go mod tidy` and dependency updates
+- Test with latest kubelogin versions
+- Verify compatibility with platform Kubernetes versions
 
 **Source**
-[Add references to relevant infrastructure and deployment files]
+- `Makefile` - Build and release automation
+- `scripts/release.sh` - Release process
+- `pkg/auth/login.go` - Authentication logic
+- `pkg/k8s/errors.go` - Error handling and troubleshooting
