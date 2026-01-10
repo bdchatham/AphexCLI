@@ -18,8 +18,10 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 
 ### Kubernetes Integration
 - **client-go**: Standard Kubernetes client library
-- **Dynamic client**: For Tekton Pipeline resource management
+- **Dynamic client**: Proper dynamic client for Tekton Pipeline resource management
 - **RBAC-aware**: Respects platform namespace isolation and permissions
+- **Timeout handling**: 10-second timeout on authorization checks to prevent hanging
+- **Error resilience**: Graceful handling of network issues and API failures
 
 ### Pipeline Management
 - **Create**: Deploy Tekton Pipeline resources from YAML files

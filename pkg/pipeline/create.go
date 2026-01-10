@@ -7,9 +7,11 @@ import (
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/dynamic"
 )
 
 var (
@@ -49,8 +51,8 @@ func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
 	}
 
 	// Validate it's a Tekton Pipeline
-	if pipeline.GetKind() != "Pipeline" || pipeline.GetAPIVersion() != "tekton.dev/v1" {
-		return fmt.Errorf("file must contain a Tekton Pipeline resource (kind: Pipeline, apiVersion: tekton.dev/v1)")
+	if pipeline.GetKind() != "Pipeline" || pipeline.GetAPIVersion() != "tekton.dev/v1beta1" {
+		return fmt.Errorf("file must contain a Tekton Pipeline resource (kind: Pipeline, apiVersion: tekton.dev/v1beta1)")
 	}
 
 	// Set name if provided via command line
@@ -74,16 +76,16 @@ func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
 		fmt.Printf("Creating pipeline %q in namespace %q\n", pipeline.GetName(), namespace)
 	}
 
+	// Create dynamic client for Tekton resources
+	dynamicClient, err := dynamic.NewForConfig(client.Config)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
 	// Create the pipeline with progress indicator
 	err = progress.WithSpinner(fmt.Sprintf("Creating pipeline %q", pipeline.GetName()), func() error {
-		dynamicClient := client.Clientset.Discovery().RESTClient()
-		result := dynamicClient.
-			Post().
-			AbsPath("/apis", pipelineGVR.Group, pipelineGVR.Version, "namespaces", namespace, pipelineGVR.Resource).
-			Body(pipelineData).
-			Do(ctx)
-
-		return result.Error()
+		_, err := dynamicClient.Resource(pipelineGVR).Namespace(namespace).Create(ctx, &pipeline, metav1.CreateOptions{})
+		return err
 	})
 
 	if err != nil {

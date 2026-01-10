@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
 	authv1 "k8s.io/api/authorization/v1"
@@ -24,6 +25,10 @@ func (e *PermissionError) Error() string {
 
 // CheckPermission performs a SelfSubjectAccessReview to verify user permissions
 func CheckPermission(ctx context.Context, client *k8s.Client, resource, verb, namespace string) error {
+	// Create context with timeout to prevent hanging
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	// Create SelfSubjectAccessReview
 	sar := &authv1.SelfSubjectAccessReview{
 		Spec: authv1.SelfSubjectAccessReviewSpec{
@@ -37,8 +42,8 @@ func CheckPermission(ctx context.Context, client *k8s.Client, resource, verb, na
 		},
 	}
 
-	// Perform the access review
-	result, err := client.Clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+	// Perform the access review with timeout
+	result, err := client.Clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(timeoutCtx, sar, metav1.CreateOptions{})
 	if err != nil {
 		// Log warning but don't fail - let the actual operation handle the error
 		fmt.Printf("Warning: failed to perform preflight authorization check: %v\n", err)
