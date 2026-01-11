@@ -22,10 +22,10 @@ Options:
 ### Organization Commands
 
 #### `aphex organization bootstrap`
-Bootstrap a new organization with namespace, webhook secrets, and RBAC.
+Bootstrap a new organization with namespace, webhook infrastructure, and RBAC.
 
 ```bash
-aphex organization bootstrap [organization-name] [options]
+aphex organization bootstrap --admin-email <email> <organization-name> [options]
 
 Options:
   --admin-email string      Admin email address for the organization (required)
@@ -39,9 +39,14 @@ Options:
 **Behavior:**
 - Creates Organization CRD in platform-system namespace
 - Provisions organization namespace (org-{name})
-- Creates GitHub webhook secret for the organization
+- Creates GitHub webhook secret and Cloudflared credentials
 - Sets up RBAC for organization admins
+- Configures per-organization webhook URL (webhooks-{org}.homelab.local)
+- Updates Cloudflared credentials if CLOUDFLARE_TUNNEL_CREDENTIALS environment variable is set
 - Requires platform-admin permissions
+
+**Environment Variables:**
+- `CLOUDFLARE_TUNNEL_CREDENTIALS`: API token for Cloudflare tunnel management
 
 #### `aphex organization list`
 List all organizations and their status.
@@ -62,7 +67,7 @@ Options:
 Create a new Tekton Pipeline resource and associated RepoBinding for webhook integration.
 
 ```bash
-aphex pipeline create [name] [options]
+aphex pipeline create --file <pipeline-file> --repo-org <org> --repo-name <repo> <name> [options]
 
 Options:
   --file, -f string       Pipeline definition file path (required)
