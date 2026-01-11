@@ -64,8 +64,27 @@ No automated alerting configured. Issues reported via:
 
 **Resolution**:
 1. Validate YAML file: `kubectl apply --dry-run=client -f pipeline.yaml`
-2. Check namespace exists: `kubectl get namespace <namespace>`
-3. Verify Tekton is installed: `kubectl get crd pipelines.tekton.dev`
+2. Verify required parameters: `--repo-org` and `--repo-name` flags provided
+3. Check RepoBinding CRD exists: `kubectl get crd repobindings.arbiter.io`
+4. Verify Tekton is installed: `kubectl get crd pipelines.tekton.dev`
+5. Check platform-system namespace exists: `kubectl get namespace platform-system`
+
+#### Pipeline Not Found Errors
+**Symptom**: `aphex pipeline delete` reports pipeline not found
+
+**Resolution**:
+1. List all pipelines: `aphex pipeline list`
+2. Check if pipeline exists in expected namespace: `kubectl get pipeline <name> -n <name>`
+3. Verify RBAC permissions across namespaces: `kubectl auth can-i list pipelines --all-namespaces`
+
+#### RepoBinding Creation Failures
+**Symptom**: Pipeline created but RepoBinding creation fails
+
+**Resolution**:
+1. Check RepoBinding CRD: `kubectl get crd repobindings.arbiter.io`
+2. Verify platform-system namespace: `kubectl get namespace platform-system`
+3. Check existing RepoBinding: `kubectl get repobinding <pipeline-name>-binding -n platform-system`
+4. Validate GitHub org/repo names match repository structure
 
 ### Troubleshooting
 

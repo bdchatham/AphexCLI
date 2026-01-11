@@ -12,37 +12,26 @@ import (
 
 // ListOptions holds options for pipeline listing
 type ListOptions struct {
-	Namespace     string
-	AllNamespaces bool
-	OutputFormat  output.Format
-	Quiet         bool
-	Verbose       bool
+	OutputFormat output.Format
+	Quiet        bool
+	Verbose      bool
 }
 
-// List lists Tekton Pipelines
+// List lists all Tekton Pipelines across all accessible namespaces
 func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
-	var namespaces []string
+	// List all namespaces user has access to
+	namespaceList, err := client.Clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return k8s.FormatError(err)
+	}
 	
-	if opts.AllNamespaces {
-		// List all namespaces user has access to
-		namespaceList, err := client.Clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			return k8s.FormatError(err)
-		}
-		for _, ns := range namespaceList.Items {
-			namespaces = append(namespaces, ns.Name)
-		}
-	} else {
-		// Use specified namespace or default
-		namespace := opts.Namespace
-		if namespace == "" {
-			namespace = client.Namespace
-		}
-		namespaces = []string{namespace}
+	var namespaces []string
+	for _, ns := range namespaceList.Items {
+		namespaces = append(namespaces, ns.Name)
 	}
 
 	if opts.Verbose {
-		fmt.Printf("Listing pipelines in namespaces: %v\n", namespaces)
+		fmt.Printf("Listing pipelines across all namespaces\n")
 	}
 
 	// Collect all pipelines

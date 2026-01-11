@@ -18,15 +18,24 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 
 ### Kubernetes Integration
 - **client-go**: Standard Kubernetes client library
-- **Dynamic client**: Proper dynamic client for Tekton Pipeline resource management
+- **Dynamic client**: Proper dynamic client for Tekton Pipeline and RepoBinding resource management
 - **RBAC-aware**: Respects platform namespace isolation and permissions
+- **Cross-namespace operations**: Searches across namespaces for pipeline discovery
+- **Automatic resource provisioning**: Creates namespaces and RepoBindings automatically
 - **Timeout handling**: 10-second timeout on authorization checks to prevent hanging
 - **Error resilience**: Graceful handling of network issues and API failures
 
 ### Pipeline Management
-- **Create**: Deploy Tekton Pipeline resources from YAML files
-- **Delete**: Remove pipelines with confirmation prompts
-- **List**: Display pipelines with namespace filtering
+- **Create**: Deploy Tekton Pipeline resources from YAML files with automatic namespace creation
+- **Delete**: Remove pipelines using cross-namespace discovery (no namespace required)
+- **List**: Display all pipelines across accessible namespaces
+- **RepoBinding Integration**: Automatic webhook provisioning for GitHub integration
+
+### Namespace Management
+- **Pipeline-Namespace Mapping**: Each pipeline creates its own namespace (pipeline-name = namespace-name)
+- **Automatic Namespace Creation**: CLI creates namespaces automatically during pipeline creation
+- **Cross-Namespace Discovery**: Delete and list operations search across all accessible namespaces
+- **No Manual Namespace Management**: Users never specify namespaces directly
 
 ## Technology Stack
 

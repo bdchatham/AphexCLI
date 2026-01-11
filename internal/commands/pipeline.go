@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/bdchatham/AphexCLI/pkg/auth"
-	"github.com/bdchatham/AphexCLI/pkg/interactive"
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
 	"github.com/bdchatham/AphexCLI/pkg/output"
 	"github.com/bdchatham/AphexCLI/pkg/pipeline"
@@ -25,14 +24,20 @@ func PipelineCommand() *cli.Command {
 				ArgsUsage: "[name]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    "file",
-						Aliases: []string{"f"},
-						Usage:   "Pipeline definition file path",
+						Name:     "file",
+						Aliases:  []string{"f"},
+						Usage:    "Pipeline definition file path",
+						Required: true,
 					},
 					&cli.StringFlag{
-						Name:    "namespace",
-						Aliases: []string{"n"},
-						Usage:   "Kubernetes namespace",
+						Name:     "repo-org",
+						Usage:    "GitHub organization name",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "repo-name", 
+						Usage:    "GitHub repository name",
+						Required: true,
 					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
@@ -57,11 +62,6 @@ func PipelineCommand() *cli.Command {
 				Usage:     "Delete pipeline instance",
 				ArgsUsage: "[name]",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "namespace",
-						Aliases: []string{"n"},
-						Usage:   "Kubernetes namespace",
-					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
 						Usage: "Path to kubeconfig file",
@@ -89,17 +89,8 @@ func PipelineCommand() *cli.Command {
 				Usage:     "List pipeline instances",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    "namespace",
-						Aliases: []string{"n"},
-						Usage:   "Kubernetes namespace",
-					},
-					&cli.StringFlag{
 						Name:  "kubeconfig",
 						Usage: "Path to kubeconfig file",
-					},
-					&cli.BoolFlag{
-						Name:  "all-namespaces",
-						Usage: "List pipelines across all namespaces",
 					},
 					&cli.StringFlag{
 						Name:    "output",
@@ -159,39 +150,27 @@ func pipelineBeforeAction(ctx context.Context, cmd *cli.Command) error {
 }
 
 func pipelineCreateAction(ctx context.Context, cmd *cli.Command) error {
-	// Create Kubernetes client first to get default namespace
+	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	var pipelineName, namespace, filePath string
-
-	// Check if we need interactive mode
+	// Get pipeline name from arguments
 	args := cmd.Args()
-	if args.Len() == 0 || cmd.String("file") == "" {
-		// Enter interactive mode
-		pipelineName, namespace, filePath, err = interactive.PromptPipelineCreation(client.Namespace)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Use command line arguments
-		pipelineName = args.First()
-		namespace = cmd.String("namespace")
-		filePath = cmd.String("file")
-		
-		if filePath == "" {
-			return fmt.Errorf("--file flag is required")
-		}
+	if args.Len() == 0 {
+		return fmt.Errorf("pipeline name is required as argument")
 	}
 
 	// Create pipeline
 	opts := pipeline.CreateOptions{
-		Name:      pipelineName,
-		Namespace: namespace,
-		FilePath:  filePath,
-		Verbose:   cmd.Bool("verbose"),
+		Name:        args.First(),
+		FilePath:    cmd.String("file"),
+		RepoOrg:     cmd.String("repo-org"),
+		RepoName:    cmd.String("repo-name"),
+		TenantName:  args.First(), // Same as pipeline name
+		IngressHost: "webhooks.homelab.local", // Hardcoded
+		Verbose:     cmd.Bool("verbose"),
 	}
 
 	return pipeline.Create(ctx, client, opts)
@@ -213,10 +192,9 @@ func pipelineDeleteAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Delete pipeline
 	opts := pipeline.DeleteOptions{
-		Name:      pipelineName,
-		Namespace: cmd.String("namespace"),
-		Force:     cmd.Bool("force"),
-		Verbose:   cmd.Bool("verbose"),
+		Name:    pipelineName,
+		Force:   cmd.Bool("force"),
+		Verbose: cmd.Bool("verbose"),
 	}
 
 	return pipeline.Delete(ctx, client, opts)
@@ -234,11 +212,9 @@ func pipelineListAction(ctx context.Context, cmd *cli.Command) error {
 	
 	// List pipelines
 	opts := pipeline.ListOptions{
-		Namespace:     cmd.String("namespace"),
-		AllNamespaces: cmd.Bool("all-namespaces"),
-		OutputFormat:  outputFormat,
-		Quiet:         cmd.Bool("quiet"),
-		Verbose:       cmd.Bool("verbose"),
+		OutputFormat: outputFormat,
+		Quiet:        cmd.Bool("quiet"),
+		Verbose:      cmd.Bool("verbose"),
 	}
 
 	return pipeline.List(ctx, client, opts)
