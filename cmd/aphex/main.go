@@ -21,6 +21,7 @@ func main() {
 		Version: Version,
 		Commands: []*cli.Command{
 			commands.AuthCommand(),
+			commands.OrganizationCommand(),
 			commands.PipelineCommand(),
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {

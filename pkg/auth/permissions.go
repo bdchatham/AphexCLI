@@ -72,3 +72,43 @@ func CheckPipelineCreate(ctx context.Context, client *k8s.Client, namespace stri
 func CheckPipelineDelete(ctx context.Context, client *k8s.Client, namespace string) error {
 	return CheckPermission(ctx, client, "pipelines", "delete", namespace)
 }
+
+// CheckOrganizationBootstrap checks permissions for organization bootstrapping
+func CheckOrganizationBootstrap(ctx context.Context, client *k8s.Client) error {
+	// Create context with timeout to prevent hanging
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Create SelfSubjectAccessReview for organizations
+	sar := &authv1.SelfSubjectAccessReview{
+		Spec: authv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authv1.ResourceAttributes{
+				Namespace: "platform-system",
+				Verb:      "create",
+				Group:     "arbiter.io",
+				Version:   "v1alpha1",
+				Resource:  "organizations",
+			},
+		},
+	}
+
+	// Perform the access review with timeout
+	result, err := client.Clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(timeoutCtx, sar, metav1.CreateOptions{})
+	if err != nil {
+		// Log warning but don't fail - let the actual operation handle the error
+		fmt.Printf("Warning: failed to perform preflight authorization check: %v\n", err)
+		return nil
+	}
+
+	// Check if access is allowed
+	if !result.Status.Allowed {
+		return &PermissionError{
+			Resource:  "organizations",
+			Verb:      "create",
+			Namespace: "platform-system",
+			Reason:    result.Status.Reason,
+		}
+	}
+
+	return nil
+}

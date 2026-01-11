@@ -19,6 +19,43 @@ Options:
   --verbose, -v         Verbose output
 ```
 
+### Organization Commands
+
+#### `aphex organization bootstrap`
+Bootstrap a new organization with namespace, webhook secrets, and RBAC.
+
+```bash
+aphex organization bootstrap [organization-name] [options]
+
+Options:
+  --admin-email string      Admin email address for the organization (required)
+  --display-name string     Human-readable organization name (defaults to organization name)
+  --webhook-secret string   GitHub webhook secret (auto-generated if not provided)
+  --kubeconfig string       Path to kubeconfig file
+  --output, -o string       Output format (table, json, yaml)
+  --verbose, -v             Verbose output
+```
+
+**Behavior:**
+- Creates Organization CRD in platform-system namespace
+- Provisions organization namespace (org-{name})
+- Creates GitHub webhook secret for the organization
+- Sets up RBAC for organization admins
+- Requires platform-admin permissions
+
+#### `aphex organization list`
+List all organizations and their status.
+
+```bash
+aphex organization list [options]
+
+Options:
+  --kubeconfig string       Path to kubeconfig file
+  --output, -o string       Output format (table, json, yaml)
+  --quiet                   Suppress non-essential output
+  --verbose, -v             Verbose output
+```
+
 ### Pipeline Commands
 
 #### `aphex pipeline create`
@@ -145,7 +182,14 @@ fi
 
 ### CI/CD Integration
 ```yaml
-# GitHub Actions example
+# GitHub Actions example - Organization Bootstrap (Admin only)
+- name: Bootstrap Organization
+  run: |
+    aphex auth login
+    aphex organization bootstrap ${{ github.repository_owner }} \
+      --admin-email admin@company.com
+
+# GitHub Actions example - Pipeline Creation
 - name: Deploy Pipeline with Webhook Integration
   run: |
     aphex auth login
@@ -154,6 +198,40 @@ fi
       --repo-org ${{ github.repository_owner }} \
       --repo-name ${{ github.event.repository.name }}
 ```
+
+## Organization Management
+
+Organization bootstrap creates a complete multi-tenant setup:
+
+**Created Resources:**
+- Organization CRD in `platform-system` namespace
+- Organization namespace: `org-{organization-name}`
+- GitHub webhook secret: `github-webhook-{organization-name}`
+- RBAC roles and bindings for organization admins
+
+**Organization Specification:**
+```yaml
+apiVersion: arbiter.io/v1alpha1
+kind: Organization
+metadata:
+  name: {organization-name}
+  namespace: platform-system
+spec:
+  displayName: {display-name}
+  adminUsers: [{admin-email}]
+  webhookSecret: {auto-generated-or-provided}
+status:
+  namespace: org-{organization-name}
+  webhookURL: https://webhooks-{organization-name}.homelab.local
+  phase: Active
+```
+
+**Per-Organization Infrastructure:**
+Each organization gets its own isolated webhook infrastructure:
+- Dedicated Cloudflared tunnel with unique subdomain
+- EventListener in organization namespace
+- Webhook secret scoped to organization
+- Complete isolation between organizations
 
 ## RepoBinding Integration
 
