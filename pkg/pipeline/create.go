@@ -27,6 +27,7 @@ var (
 type CreateOptions struct {
 	Name        string
 	FilePath    string
+	AphexOrg    string
 	RepoOrg     string
 	RepoName    string
 	TenantName  string
@@ -155,6 +156,7 @@ func createRepoBinding(ctx context.Context, dynamicClient dynamic.Interface, opt
 				"namespace": "platform-system",
 			},
 			"spec": map[string]interface{}{
+				"aphexOrg":     opts.AphexOrg,
 				"repoOrg":      opts.RepoOrg,
 				"repoName":     opts.RepoName,
 				"tenantName":   opts.TenantName,

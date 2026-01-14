@@ -79,6 +79,27 @@ func OrganizationCommand() *cli.Command {
 				},
 				Action: organizationListAction,
 			},
+			{
+				Name:      "delete",
+				Usage:     "Delete an organization and all its resources",
+				ArgsUsage: "[organization-name]",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "kubeconfig",
+						Usage: "Path to kubeconfig file",
+					},
+					&cli.BoolFlag{
+						Name:    "verbose",
+						Aliases: []string{"v"},
+						Usage:   "Verbose output",
+					},
+					&cli.BoolFlag{
+						Name:  "force",
+						Usage: "Skip confirmation prompt",
+					},
+				},
+				Action: organizationDeleteAction,
+			},
 		},
 	}
 }
@@ -144,4 +165,27 @@ func organizationListAction(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return organization.List(ctx, client, opts)
+}
+
+func organizationDeleteAction(ctx context.Context, cmd *cli.Command) error {
+	// Create Kubernetes client
+	client, err := k8s.NewClient(cmd.String("kubeconfig"))
+	if err != nil {
+		return fmt.Errorf("failed to create Kubernetes client: %w", err)
+	}
+
+	// Get organization name from arguments
+	args := cmd.Args()
+	if args.Len() == 0 {
+		return fmt.Errorf("organization name is required as argument")
+	}
+
+	// Delete organization
+	opts := organization.DeleteOptions{
+		Name:    args.First(),
+		Force:   cmd.Bool("force"),
+		Verbose: cmd.Bool("verbose"),
+	}
+
+	return organization.Delete(ctx, client, opts)
 }

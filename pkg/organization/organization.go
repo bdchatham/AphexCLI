@@ -2,12 +2,11 @@ package organization
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"os"
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -21,6 +20,9 @@ var (
 		Version:  "v1alpha1",
 		Resource: "organizations",
 	}
+	
+	// Platform system namespace where organizations are managed
+	platformSystemNamespace = "platform-system"
 )
 
 // BootstrapOptions holds options for organization bootstrapping
@@ -59,7 +61,7 @@ func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) e
 			"kind":       "Organization",
 			"metadata": map[string]interface{}{
 				"name":      opts.Name,
-				"namespace": "platform-system",
+				"namespace": platformSystemNamespace,
 			},
 			"spec": map[string]interface{}{
 				"displayName": displayName,
@@ -80,7 +82,7 @@ func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) e
 
 	// Create the organization with progress indicator
 	err = progress.WithSpinner(fmt.Sprintf("Bootstrapping organization %q", opts.Name), func() error {
-		_, err := dynamicClient.Resource(organizationGVR).Namespace("platform-system").Create(ctx, organization, metav1.CreateOptions{})
+		_, err := dynamicClient.Resource(organizationGVR).Namespace(platformSystemNamespace).Create(ctx, organization, metav1.CreateOptions{})
 		return err
 	})
 
@@ -92,49 +94,7 @@ func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) e
 	fmt.Printf("Namespace: org-%s\n", opts.Name)
 	fmt.Printf("Webhook URL: https://webhooks-%s.homelab.local\n", opts.Name)
 	
-	// Update Cloudflared credentials if provided
-	if err := updateCloudflaredCredentials(ctx, dynamicClient, opts.Name); err != nil {
-		fmt.Printf("Warning: Failed to update Cloudflared credentials: %v\n", err)
-		fmt.Printf("To enable webhooks, manually update secret: cloudflared-credentials-%s\n", opts.Name)
-	}
-	
 	return nil
-}
-
-// updateCloudflaredCredentials updates the Cloudflared credentials secret if env var is set
-func updateCloudflaredCredentials(ctx context.Context, dynamicClient dynamic.Interface, orgName string) error {
-	apiToken := os.Getenv("CLOUDFLARE_TUNNEL_CREDENTIALS")
-	if apiToken == "" {
-		return fmt.Errorf("CLOUDFLARE_TUNNEL_CREDENTIALS environment variable not set")
-	}
-
-	credentialsJSON := fmt.Sprintf(`{"api_token": "%s"}`, apiToken)
-
-	secretGVR := schema.GroupVersionResource{
-		Group:    "",
-		Version:  "v1",
-		Resource: "secrets",
-	}
-
-	secretName := fmt.Sprintf("cloudflared-credentials-%s", orgName)
-	namespace := fmt.Sprintf("org-%s", orgName)
-
-	secret := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "v1",
-			"kind":       "Secret",
-			"metadata": map[string]interface{}{
-				"name":      secretName,
-				"namespace": namespace,
-			},
-			"data": map[string]interface{}{
-				"credentials.json": base64.StdEncoding.EncodeToString([]byte(credentialsJSON)),
-			},
-		},
-	}
-
-	_, err := dynamicClient.Resource(secretGVR).Namespace(namespace).Update(ctx, secret, metav1.UpdateOptions{})
-	return err
 }
 
 // List lists all Organization resources
@@ -150,7 +110,7 @@ func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
 	}
 
 	// List organizations
-	orgList, err := dynamicClient.Resource(organizationGVR).Namespace("platform-system").List(ctx, metav1.ListOptions{})
+	orgList, err := dynamicClient.Resource(organizationGVR).Namespace(platformSystemNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return k8s.FormatError(err)
 	}
@@ -215,4 +175,68 @@ func extractStringField(obj map[string]interface{}, keys ...string) string {
 		}
 	}
 	return ""
+}
+
+// DeleteOptions holds options for organization deletion
+type DeleteOptions struct {
+	Name    string
+	Force   bool
+	Verbose bool
+}
+
+// Delete deletes an organization and all its resources
+func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
+	// Create dynamic client
+	dynamicClient, err := dynamic.NewForConfig(client.Config)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	orgGVR := schema.GroupVersionResource{
+		Group:    "arbiter.io",
+		Version:  "v1alpha1",
+		Resource: "organizations",
+	}
+
+	// Check if organization exists
+	_, err = dynamicClient.Resource(orgGVR).Namespace(platformSystemNamespace).Get(ctx, opts.Name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return fmt.Errorf("organization %q not found", opts.Name)
+		}
+		return fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	// Confirmation prompt unless --force is used
+	if !opts.Force {
+		fmt.Printf("This will delete organization %q and ALL associated resources including:\n", opts.Name)
+		fmt.Printf("  - Organization namespace (org-%s)\n", opts.Name)
+		fmt.Printf("  - All pipeline namespaces for this organization\n")
+		fmt.Printf("  - All secrets, webhooks, and configurations\n")
+		fmt.Printf("  - All RepoBindings for this organization\n")
+		fmt.Printf("\nThis action cannot be undone. Continue? (y/N): ")
+		
+		var response string
+		fmt.Scanln(&response)
+		if response != "y" && response != "Y" && response != "yes" && response != "Yes" {
+			fmt.Println("Operation cancelled")
+			return nil
+		}
+	}
+
+	if opts.Verbose {
+		fmt.Printf("Deleting organization %q...\n", opts.Name)
+	}
+
+	// Delete the organization (cascading delete via finalizers and owner references)
+	err = progress.WithSpinner(fmt.Sprintf("Deleting organization %q", opts.Name), func() error {
+		return dynamicClient.Resource(orgGVR).Namespace(platformSystemNamespace).Delete(ctx, opts.Name, metav1.DeleteOptions{})
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete organization: %w", err)
+	}
+
+	fmt.Printf("Organization %q deleted successfully\n", opts.Name)
+	return nil
 }

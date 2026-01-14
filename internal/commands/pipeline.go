@@ -30,6 +30,11 @@ func PipelineCommand() *cli.Command {
 						Required: true,
 					},
 					&cli.StringFlag{
+						Name:     "aphex-org",
+						Usage:    "Aphex organization name",
+						Required: true,
+					},
+					&cli.StringFlag{
 						Name:     "repo-org",
 						Usage:    "GitHub organization name",
 						Required: true,
@@ -166,6 +171,7 @@ func pipelineCreateAction(ctx context.Context, cmd *cli.Command) error {
 	opts := pipeline.CreateOptions{
 		Name:        args.First(),
 		FilePath:    cmd.String("file"),
+		AphexOrg:    cmd.String("aphex-org"),
 		RepoOrg:     cmd.String("repo-org"),
 		RepoName:    cmd.String("repo-name"),
 		TenantName:  args.First(), // Same as pipeline name
