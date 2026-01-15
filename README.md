@@ -1,41 +1,91 @@
-# Archon-Ready Repository Template
+# Aphex CLI
 
-This is a GitHub repository template configured for the **Archon** RAG system. It includes Kiro steering that automatically maintains accurate, RAG-ready documentation.
+A command-line tool for managing Tekton pipelines and organizations on the Arbiter platform.
 
-## What's Included
+## Features
 
-### Documentation Structure
-- `.kiro/docs/` - Complete documentation skeleton optimized for RAG retrieval
-- `CLAUDE.md` - Documentation contract and standards
-- All required documentation files (overview, architecture, operations, api, data-models, faq)
+- **OIDC Authentication**: Browser-based authentication via platform Dex
+- **Organization Management**: Bootstrap and manage multi-tenant organizations
+- **Pipeline Management**: Create, delete, and list Tekton pipelines
+- **Webhook Integration**: Automatic GitHub webhook provisioning via RepoBindings
+- **Interactive Mode**: Guided prompts for missing parameters
+- **Multiple Output Formats**: Table, JSON, and YAML output support
+- **Cross-Platform**: Builds for Linux, macOS, and Windows
 
-### Kiro Integration
-- `.kiro/steering/archon-docs.md` - Always-active steering that enforces documentation standards
-- Automatic documentation maintenance across all Kiro tasks
-- RAG-friendly structure and provenance tracking
+## Installation
 
-## Getting Started
+Download the latest release for your platform from [GitHub Releases](https://github.com/bdchatham/AphexCLI/releases).
 
-1. **Use this template** to create a new repository
-2. **Customize** the documentation files under `.kiro/docs/` for your project
-3. **Work with Kiro** - the steering will automatically maintain documentation standards
+### macOS/Linux
+```bash
+# Extract and install
+tar -xzf aphex_*.tar.gz
+sudo mv aphex /usr/local/bin/
+```
 
-## Documentation Standards
+### Windows
+```powershell
+# Extract aphex.exe and add to PATH
+```
 
-All documentation follows these principles:
+## Quick Start
 
-- **Grounded in code** - Every statement references actual code or infrastructure
-- **RAG-friendly** - Structured for optimal retrieval (400-800 token sections)
-- **Provenance** - Clear "Source" references to relevant files
-- **No hallucinations** - Only documented, verifiable behavior
-- **Always current** - Updated alongside code changes
+```bash
+# Authenticate with the platform
+aphex auth login
+
+# Bootstrap a new organization (admin only)
+aphex organization bootstrap my-org --admin-email admin@company.com
+
+# List organizations
+aphex organization list
+
+# Create a pipeline with webhook integration
+aphex pipeline create my-pipeline \
+  --file pipeline.yaml \
+  --aphex-org my-org \
+  --repo-org github-org \
+  --repo-name github-repo
+
+# List pipelines
+aphex pipeline list
+
+# Delete a pipeline
+aphex pipeline delete my-pipeline
+```
+
+## Documentation
+
+Complete documentation is available in `.kiro/docs/`:
+- [Overview](.kiro/docs/overview.md) - Purpose and key concepts
+- [Architecture](.kiro/docs/architecture.md) - System design and components
+- [Operations](.kiro/docs/operations.md) - Deployment and troubleshooting
+- [API](.kiro/docs/api.md) - Command reference and examples
+- [Data Models](.kiro/docs/data-models.md) - Data structures and schemas
+- [FAQ](.kiro/docs/faq.md) - Common questions and answers
+
+## Development
+
+```bash
+# Build for current platform
+make build
+
+# Run tests
+make test
+
+# Build for all platforms
+make build-all
+
+# Create release
+make release
+```
 
 ## Archon Integration
 
-This repository is configured to be ingested by Archon, which reads all Markdown files under `.kiro/docs/` to build mental models for sourcing code and architectural information.
+This repository participates in the **Archon** RAG system. Documentation under `.kiro/docs/` is ingested to provide context for automated agents and engineers.
 
 See `CLAUDE.md` for the complete documentation contract.
 
 ## License
 
-[Add your license]
+MIT

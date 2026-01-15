@@ -21,10 +21,14 @@ type LoginOptions struct {
 #### CreateOptions
 ```go
 type CreateOptions struct {
-    Name      string  // Pipeline name
-    Namespace string  // Target namespace  
-    FilePath  string  // YAML file path
-    Verbose   bool    // Enable verbose output
+    Name        string  // Pipeline name
+    FilePath    string  // YAML file path
+    AphexOrg    string  // Aphex organization name
+    RepoOrg     string  // GitHub organization name
+    RepoName    string  // GitHub repository name
+    TenantName  string  // Tenant name (set to pipeline name)
+    IngressHost string  // Ingress host (hardcoded to webhooks.homelab.local)
+    Verbose     bool    // Enable verbose output
 }
 ```
 
@@ -46,6 +50,36 @@ type ListOptions struct {
     OutputFormat  output.Format // Output format
     Quiet         bool          // Suppress output
     Verbose       bool          // Enable verbose output
+}
+```
+
+### Organization Operation Options
+
+#### BootstrapOptions
+```go
+type BootstrapOptions struct {
+    Name          string  // Organization name
+    DisplayName   string  // Human-readable organization name
+    AdminEmail    string  // Admin email address
+    WebhookSecret string  // GitHub webhook secret (auto-generated if empty)
+    Verbose       bool    // Enable verbose output
+}
+```
+
+#### ListOptions
+```go
+type ListOptions struct {
+    Quiet   bool  // Suppress non-essential output
+    Verbose bool  // Enable verbose output
+}
+```
+
+#### DeleteOptions
+```go
+type DeleteOptions struct {
+    Name    string  // Organization name
+    Force   bool    // Skip confirmation prompt
+    Verbose bool    // Enable verbose output
 }
 ```
 
@@ -116,6 +150,7 @@ type Client struct {
 **Source**
 - `pkg/auth/login.go` - Authentication models
 - `pkg/pipeline/` - Pipeline operation models
+- `pkg/organization/` - Organization operation models
 - `pkg/output/formatter.go` - Output models
 - `pkg/auth/permissions.go` - Error models
 - `pkg/k8s/client.go` - Client models

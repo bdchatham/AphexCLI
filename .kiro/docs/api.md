@@ -61,16 +61,34 @@ Options:
   --verbose, -v             Verbose output
 ```
 
+#### `aphex organization delete`
+Delete an organization and all its resources.
+
+```bash
+aphex organization delete <organization-name> [options]
+
+Options:
+  --kubeconfig string       Path to kubeconfig file
+  --force                   Skip confirmation prompt
+  --verbose, -v             Verbose output
+```
+
+**Behavior:**
+- Deletes Organization CRD from platform-system namespace
+- Removes organization namespace and all resources
+- Requires platform-admin permissions
+
 ### Pipeline Commands
 
 #### `aphex pipeline create`
 Create a new Tekton Pipeline resource and associated RepoBinding for webhook integration.
 
 ```bash
-aphex pipeline create --file <pipeline-file> --repo-org <org> --repo-name <repo> <name> [options]
+aphex pipeline create <name> --file <pipeline-file> --aphex-org <org> --repo-org <org> --repo-name <repo> [options]
 
 Options:
   --file, -f string       Pipeline definition file path (required)
+  --aphex-org string      Aphex organization name (required)
   --repo-org string       GitHub organization name (required)
   --repo-name string      GitHub repository name (required)
   --kubeconfig string     Path to kubeconfig file
@@ -82,7 +100,8 @@ Options:
 - Creates pipeline in namespace matching pipeline name
 - Automatically creates namespace if it doesn't exist
 - Creates RepoBinding in platform-system namespace for webhook integration
-- Sets tenantName to pipeline name for resource organization
+- Sets tenantName to pipeline name automatically
+- Hardcodes ingressHost to "webhooks.homelab.local"
 
 #### `aphex pipeline delete`
 Delete a Tekton Pipeline resource by discovering its namespace automatically.
@@ -200,6 +219,7 @@ fi
     aphex auth login
     aphex pipeline create ${{ github.event.repository.name }} \
       --file .tekton/pipeline.yaml \
+      --aphex-org my-organization \
       --repo-org ${{ github.repository_owner }} \
       --repo-name ${{ github.event.repository.name }}
 ```
@@ -255,8 +275,9 @@ metadata:
   name: {pipeline-name}-binding
   namespace: platform-system
 spec:
-  repoOrg: {provided-org}
-  repoName: {provided-repo}
+  aphexOrg: {provided-aphex-org}
+  repoOrg: {provided-repo-org}
+  repoName: {provided-repo-name}
   tenantName: {pipeline-name}
   pipelineName: {pipeline-name}
   ingressHost: webhooks.homelab.local
@@ -264,6 +285,7 @@ spec:
 
 **Source**
 - `internal/commands/auth.go` - Authentication commands
+- `internal/commands/organization.go` - Organization commands
 - `internal/commands/pipeline.go` - Pipeline commands  
 - `pkg/output/formatter.go` - Output formatting
 - `pkg/auth/errors.go` - Error message formatting

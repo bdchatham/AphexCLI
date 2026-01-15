@@ -27,6 +27,9 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 
 ### Pipeline Management
 - **Create**: Deploy Tekton Pipeline resources from YAML files with automatic namespace creation
+  - Requires `--aphex-org`, `--repo-org`, and `--repo-name` flags
+  - Automatically sets tenantName to pipeline name
+  - Hardcodes ingressHost to "webhooks.homelab.local"
 - **Delete**: Remove pipelines using cross-namespace discovery (no namespace required)
 - **List**: Display all pipelines across accessible namespaces
 - **RepoBinding Integration**: Automatic webhook provisioning for GitHub integration
@@ -36,6 +39,18 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 - **Automatic Namespace Creation**: CLI creates namespaces automatically during pipeline creation
 - **Cross-Namespace Discovery**: Delete and list operations search across all accessible namespaces
 - **No Manual Namespace Management**: Users never specify namespaces directly
+
+### Organization Management
+- **Bootstrap**: Create new organizations with complete multi-tenant infrastructure
+  - Creates Organization CRD in platform-system namespace
+  - Provisions organization namespace (org-{name})
+  - Sets up webhook infrastructure and RBAC
+  - Requires platform-admin permissions
+- **List**: Display all organizations and their status
+- **Delete**: Remove organizations and all associated resources
+  - Deletes Organization CRD
+  - Removes organization namespace
+  - Requires platform-admin permissions
 
 ## Technology Stack
 
@@ -79,4 +94,5 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 - `internal/commands/` - Command implementations
 - `pkg/k8s/client.go` - Kubernetes client wrapper
 - `pkg/auth/login.go` - OIDC authentication setup
+- `pkg/organization/` - Organization management
 - `go.mod` - Go dependencies
