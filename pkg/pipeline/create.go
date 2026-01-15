@@ -159,9 +159,8 @@ func createRepoBinding(ctx context.Context, dynamicClient dynamic.Interface, opt
 				"aphexOrg":     opts.AphexOrg,
 				"repoOrg":      opts.RepoOrg,
 				"repoName":     opts.RepoName,
-				"tenantName":   opts.TenantName,
 				"pipelineName": opts.Name,
-				"ingressHost":  opts.IngressHost,
+				"templateRef":  "run-pipeline-v1",
 			},
 		},
 	}
