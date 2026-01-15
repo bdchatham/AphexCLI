@@ -26,17 +26,24 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 - **Error resilience**: Graceful handling of network issues and API failures
 
 ### Pipeline Management
-- **Create**: Deploy Tekton Pipeline resources from YAML files with automatic namespace creation
+- **Create**: Creates a RepoBinding CRD with embedded pipeline YAML
   - Requires `--aphex-org`, `--repo-org`, and `--repo-name` flags
-  - Automatically sets tenantName to pipeline name
-  - Hardcodes ingressHost to "webhooks.homelab.local"
+  - Reads pipeline YAML from file and embeds it in RepoBinding spec
+  - Controller provisions all resources (namespace, Pipeline, RBAC, Triggers)
+  - CLI is thin and declarative - no direct resource creation
 - **Delete**: Remove pipelines using cross-namespace discovery (no namespace required)
 - **List**: Display all pipelines across accessible namespaces
 - **RepoBinding Integration**: Automatic webhook provisioning for GitHub integration
 
+### Kubernetes Operator Pattern
+- **Declarative CLI**: CLI only creates RepoBinding CRDs, doesn't provision resources directly
+- **Controller Reconciliation**: RepoBinding controller in ArbiterPipelineInfrastructure handles all provisioning
+- **Separation of Concerns**: CLI handles user interaction, controller handles infrastructure
+- **Kubernetes-Driven**: All resource management through Kubernetes reconciliation loops
+
 ### Namespace Management
-- **Pipeline-Namespace Mapping**: Each pipeline creates its own namespace (pipeline-name = namespace-name)
-- **Automatic Namespace Creation**: CLI creates namespaces automatically during pipeline creation
+- **Pipeline-Namespace Mapping**: Each pipeline has its own namespace (pipeline-name = namespace-name)
+- **Controller-Managed**: RepoBinding controller creates namespaces automatically
 - **Cross-Namespace Discovery**: Delete and list operations search across all accessible namespaces
 - **No Manual Namespace Management**: Users never specify namespaces directly
 

@@ -2,6 +2,16 @@
 
 A command-line tool for managing Tekton pipelines and organizations on the Arbiter platform.
 
+## How It Works
+
+The Aphex CLI provides a thin, declarative interface to the Arbiter Pipeline Infrastructure:
+
+1. **CLI creates RepoBinding CRD**: The CLI reads your pipeline YAML and creates a RepoBinding custom resource with the pipeline definition embedded
+2. **Controller reconciles**: The RepoBinding controller in ArbiterPipelineInfrastructure watches for RepoBinding resources and provisions all necessary infrastructure
+3. **Kubernetes-driven**: All resource creation and management happens through Kubernetes reconciliation, not imperative CLI commands
+
+This design follows the Kubernetes operator pattern: the CLI is thin and declarative, while the controller handles all provisioning logic.
+
 ## Features
 
 - **OIDC Authentication**: Browser-based authentication via platform Dex
@@ -46,6 +56,15 @@ aphex pipeline create my-pipeline \
   --aphex-org my-org \
   --repo-org github-org \
   --repo-name github-repo
+
+# The controller will provision:
+# - Namespace: my-pipeline
+# - Pipeline resource in namespace my-pipeline
+# - Service account, RBAC, and resource limits
+# - Tekton Triggers (TriggerTemplate, Trigger)
+
+# Monitor provisioning progress
+kubectl get repobinding my-pipeline-binding -n platform-system -o yaml
 
 # List pipelines
 aphex pipeline list

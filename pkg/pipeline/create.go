@@ -100,6 +100,20 @@ func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
 
 	fmt.Printf("Pipeline %q created successfully in namespace %q\n", pipeline.GetName(), namespace)
 
+	// Verify pipeline was created
+	if opts.Verbose {
+		fmt.Printf("Verifying pipeline creation...\n")
+	}
+	
+	createdPipeline, err := dynamicClient.Resource(pipelineGVR).Namespace(namespace).Get(ctx, pipeline.GetName(), metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("pipeline was created but verification failed: %w", err)
+	}
+	
+	if opts.Verbose {
+		fmt.Printf("Pipeline verified: %s/%s\n", createdPipeline.GetNamespace(), createdPipeline.GetName())
+	}
+
 	// Create RepoBinding
 	if err := createRepoBinding(ctx, dynamicClient, opts, namespace); err != nil {
 		return fmt.Errorf("failed to create RepoBinding: %w", err)
