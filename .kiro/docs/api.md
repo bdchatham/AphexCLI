@@ -91,11 +91,11 @@ Global Options:
 - Creates GitHub webhook secret and Cloudflared credentials
 - Sets up RBAC for organization admins
 - Configures per-organization webhook URL (webhooks-{org}.homelab.local)
-- Updates Cloudflared credentials if CLOUDFLARE_TUNNEL_CREDENTIALS environment variable is set
+- Updates Cloudflared credentials if CLOUDFLARE_API_TOKEN environment variable is set
 - Requires platform-admin permissions
 
 **Environment Variables:**
-- `CLOUDFLARE_TUNNEL_CREDENTIALS`: API token for Cloudflare tunnel management
+- `CLOUDFLARE_API_TOKEN`: API token for Cloudflare tunnel management
 
 #### `aphex organization list`
 List all organizations and their status.

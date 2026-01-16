@@ -63,6 +63,7 @@ func main() {
 			commands.AuthCommand(),
 			commands.OrganizationCommand(),
 			commands.PipelineCommand(),
+			commands.KnowledgeBaseCommand(),
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			// Default action when no subcommands are provided
