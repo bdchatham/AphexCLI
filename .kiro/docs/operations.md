@@ -89,7 +89,15 @@ No automated alerting configured. Issues reported via:
 ### Troubleshooting
 
 #### Debug Mode
-Add `--verbose` flag to any command for detailed output
+Use `--log-level=debug` or `--verbose` flag on any command for detailed output:
+
+```bash
+# Maximum verbosity with --verbose
+aphex pipeline create my-pipeline --file pipeline.yaml --verbose
+
+# Or specify debug level explicitly
+aphex pipeline list --log-level=debug
+```
 
 #### Log Analysis
 Check kubectl logs for related errors:

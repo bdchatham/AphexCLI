@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
+	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,17 +32,17 @@ type BootstrapOptions struct {
 	DisplayName   string
 	AdminEmail    string
 	WebhookSecret string
-	Verbose       bool
 }
 
 // ListOptions holds options for organization listing
 type ListOptions struct {
-	Quiet   bool
-	Verbose bool
+	Quiet bool
 }
 
 // Bootstrap creates a new Organization resource
 func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) error {
+	log := logger.GetLogger(ctx)
+	
 	// Create dynamic client
 	dynamicClient, err := dynamic.NewForConfig(client.Config)
 	if err != nil {
@@ -76,9 +77,7 @@ func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) e
 		spec["webhookSecret"] = opts.WebhookSecret
 	}
 
-	if opts.Verbose {
-		fmt.Printf("Creating organization %q with admin %q\n", opts.Name, opts.AdminEmail)
-	}
+	log.Debugf("Creating organization %q with admin %q", opts.Name, opts.AdminEmail)
 
 	// Create the organization with progress indicator
 	err = progress.WithSpinner(fmt.Sprintf("Bootstrapping organization %q", opts.Name), func() error {
@@ -99,15 +98,15 @@ func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) e
 
 // List lists all Organization resources
 func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
+	log := logger.GetLogger(ctx)
+	
 	// Create dynamic client
 	dynamicClient, err := dynamic.NewForConfig(client.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
-	if opts.Verbose {
-		fmt.Println("Listing organizations...")
-	}
+	log.Debug("Listing organizations...")
 
 	// List organizations
 	orgList, err := dynamicClient.Resource(organizationGVR).Namespace(platformSystemNamespace).List(ctx, metav1.ListOptions{})
@@ -179,13 +178,14 @@ func extractStringField(obj map[string]interface{}, keys ...string) string {
 
 // DeleteOptions holds options for organization deletion
 type DeleteOptions struct {
-	Name    string
-	Force   bool
-	Verbose bool
+	Name  string
+	Force bool
 }
 
 // Delete deletes an organization and all its resources
 func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
+	log := logger.GetLogger(ctx)
+	
 	// Create dynamic client
 	dynamicClient, err := dynamic.NewForConfig(client.Config)
 	if err != nil {
@@ -224,9 +224,7 @@ func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
 		}
 	}
 
-	if opts.Verbose {
-		fmt.Printf("Deleting organization %q...\n", opts.Name)
-	}
+	log.Debugf("Deleting organization %q...", opts.Name)
 
 	// Delete the organization (cascading delete via finalizers and owner references)
 	err = progress.WithSpinner(fmt.Sprintf("Deleting organization %q", opts.Name), func() error {

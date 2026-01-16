@@ -2,7 +2,52 @@
 
 ## Overview
 
-The Aphex CLI provides a command-line interface for managing Tekton pipelines on the Arbiter platform. This document describes the CLI commands, options, and integration patterns.
+The Aphex CLI provides a command-line interface for managing Tekton pipelines on the Arbiter platform. This document describes the CLI commands, options, integration patterns, and the logger API for developers.
+
+## Global Flags
+
+All commands support the following global flags for logging control:
+
+### `--log-level <level>` or `-l <level>`
+Set the log level for all commands.
+
+**Values**: `debug`, `info`, `warn`, `error`  
+**Default**: `info`
+
+Controls the verbosity of output across all commands and packages. Messages at or above the specified level are displayed.
+
+**Examples**:
+```bash
+aphex pipeline list --log-level=debug
+aphex organization bootstrap my-org --admin-email admin@example.com -l warn
+```
+
+### `--verbose` or `-v`
+Enable verbose output (equivalent to `--log-level=debug`).
+
+Shorthand flag for maximum verbosity. When specified, overrides any `--log-level` setting.
+
+**Examples**:
+```bash
+aphex pipeline create my-pipeline --file pipeline.yaml --verbose
+aphex organization list -v
+```
+
+## Log Levels
+
+The CLI supports four hierarchical log levels:
+
+- **debug**: Most verbose - shows all messages including detailed debugging information
+- **info**: Default level - shows informational messages, warnings, and errors
+- **warn**: Shows only warnings and errors
+- **error**: Least verbose - shows only error messages
+
+### Output Streams
+
+- **Debug and Info** messages are written to **stdout**
+- **Warn and Error** messages are written to **stderr**
+
+This separation allows for flexible output handling in scripts and automation.
 
 ## Commands
 
@@ -14,9 +59,10 @@ Authenticate with the platform using OIDC.
 ```bash
 aphex auth login [options]
 
-Options:
-  --kubeconfig string   Path to kubeconfig file
-  --verbose, -v         Verbose output
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
 ```
 
 ### Organization Commands
@@ -31,9 +77,12 @@ Options:
   --admin-email string      Admin email address for the organization (required)
   --display-name string     Human-readable organization name (defaults to organization name)
   --webhook-secret string   GitHub webhook secret (auto-generated if not provided)
-  --kubeconfig string       Path to kubeconfig file
   --output, -o string       Output format (table, json, yaml)
-  --verbose, -v             Verbose output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
 ```
 
 **Behavior:**
@@ -55,10 +104,13 @@ List all organizations and their status.
 aphex organization list [options]
 
 Options:
-  --kubeconfig string       Path to kubeconfig file
   --output, -o string       Output format (table, json, yaml)
   --quiet                   Suppress non-essential output
-  --verbose, -v             Verbose output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
 ```
 
 #### `aphex organization delete`
@@ -68,9 +120,12 @@ Delete an organization and all its resources.
 aphex organization delete <organization-name> [options]
 
 Options:
-  --kubeconfig string       Path to kubeconfig file
   --force                   Skip confirmation prompt
-  --verbose, -v             Verbose output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
 ```
 
 **Behavior:**
@@ -91,9 +146,12 @@ Options:
   --aphex-org string      Aphex organization name (required)
   --repo-org string       GitHub organization name (required)
   --repo-name string      GitHub repository name (required)
-  --kubeconfig string     Path to kubeconfig file
   --output, -o string     Output format (table, json, yaml)
-  --verbose, -v           Verbose output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
 ```
 
 **Behavior:**
@@ -110,10 +168,13 @@ Delete a Tekton Pipeline resource by discovering its namespace automatically.
 aphex pipeline delete [name] [options]
 
 Options:
-  --kubeconfig string     Path to kubeconfig file
   --force                 Skip confirmation prompt
   --output, -o string     Output format (table, json, yaml)
-  --verbose, -v           Verbose output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
 ```
 
 **Behavior:**
@@ -128,10 +189,13 @@ List all Tekton Pipeline resources across accessible namespaces.
 aphex pipeline list [options]
 
 Options:
-  --kubeconfig string     Path to kubeconfig file
   --output, -o string     Output format (table, json, yaml)
   --quiet                 Suppress non-essential output
-  --verbose, -v           Verbose output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
 ```
 
 **Behavior:**
@@ -193,15 +257,198 @@ tenant-1     my-pipeline  2024-01-09T10:30:00Z
 
 ## Integration Examples
 
+### Logger API for Developers
+
+The Aphex CLI provides a centralized logger that can be accessed from any command or package function via context. This section describes how to use the logger API in your code.
+
+#### Accessing the Logger
+
+**In Commands** (`internal/commands/*.go`):
+```go
+func myCommandAction(ctx context.Context, cmd *cli.Command) error {
+    // Get logger from context
+    logger := logger.GetLogger(ctx)
+    
+    // Use logger methods
+    logger.Debug("Starting command execution")
+    logger.Info("Processing request")
+    logger.Warn("Deprecated flag used")
+    logger.Error("Operation failed")
+    
+    return nil
+}
+```
+
+**In Package Functions** (`pkg/*/*.go`):
+```go
+func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
+    // Get logger from context
+    logger := logger.GetLogger(ctx)
+    
+    // Use logger for debugging and information
+    logger.Debugf("Creating resource with name: %s", opts.Name)
+    logger.Infof("Resource created successfully: %s", opts.Name)
+    
+    return nil
+}
+```
+
+#### Logger Methods
+
+The logger provides both simple and formatted logging methods:
+
+**Simple Methods**:
+- `logger.Debug(msg string)` - Log debug message
+- `logger.Info(msg string)` - Log informational message
+- `logger.Warn(msg string)` - Log warning message
+- `logger.Error(msg string)` - Log error message
+
+**Formatted Methods**:
+- `logger.Debugf(format string, args ...interface{})` - Log formatted debug message
+- `logger.Infof(format string, args ...interface{})` - Log formatted info message
+- `logger.Warnf(format string, args ...interface{})` - Log formatted warning message
+- `logger.Errorf(format string, args ...interface{})` - Log formatted error message
+
+#### Usage Guidelines
+
+**When to use each level**:
+
+- **Debug**: Detailed information for troubleshooting
+  - Variable values and state
+  - Function entry/exit points
+  - Intermediate calculation results
+  - API request/response details
+
+- **Info**: General informational messages
+  - Operation start/completion
+  - Resource creation/deletion
+  - Configuration values
+  - Progress updates
+
+- **Warn**: Warning conditions that don't prevent operation
+  - Deprecated features being used
+  - Fallback behavior triggered
+  - Non-critical errors recovered from
+  - Performance concerns
+
+- **Error**: Error conditions that prevent operation
+  - API failures
+  - Invalid input
+  - Resource not found
+  - Permission denied
+
+#### Example: Migrating from Verbose Flags
+
+**Before** (old pattern with verbose flags):
+```go
+type CreateOptions struct {
+    Name    string
+    Verbose bool
+}
+
+func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
+    if opts.Verbose {
+        fmt.Printf("Creating resource: %s\n", opts.Name)
+    }
+    
+    // ... create resource ...
+    
+    if opts.Verbose {
+        fmt.Printf("Resource created successfully\n")
+    }
+    
+    return nil
+}
+```
+
+**After** (new pattern with centralized logger):
+```go
+type CreateOptions struct {
+    Name string
+    // No Verbose field needed
+}
+
+func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
+    logger := logger.GetLogger(ctx)
+    
+    logger.Debugf("Creating resource: %s", opts.Name)
+    
+    // ... create resource ...
+    
+    logger.Info("Resource created successfully")
+    
+    return nil
+}
+```
+
+#### No-Op Logger Fallback
+
+The logger is designed to be fail-safe. If `GetLogger(ctx)` is called on a context that doesn't contain a logger, it returns a no-op logger that discards all output without error:
+
+```go
+// This is safe even if context doesn't have a logger
+logger := logger.GetLogger(ctx)
+logger.Debug("This won't panic even if logger wasn't injected")
+```
+
+This allows package functions to work correctly even if called outside the normal CLI flow (e.g., in tests or as a library).
+
+#### Testing with Logger
+
+When writing tests, you can inject a logger into the test context:
+
+```go
+func TestMyFunction(t *testing.T) {
+    // Create a logger for testing
+    log := logger.NewLogger("debug")
+    
+    // Inject into context
+    ctx := logger.WithLogger(context.Background(), log)
+    
+    // Call function with context
+    err := MyFunction(ctx, options)
+    
+    // Assert results
+    assert.NoError(t, err)
+}
+```
+
+Or use the no-op logger for tests that don't need logging:
+
+```go
+func TestMyFunction(t *testing.T) {
+    // Context without logger will use no-op logger
+    ctx := context.Background()
+    
+    // Function will work fine with no-op logger
+    err := MyFunction(ctx, options)
+    
+    assert.NoError(t, err)
+}
+```
+
+**Source**
+- `pkg/logger/logger.go` - Logger methods and interface implementation
+- `pkg/logger/context.go` - Context integration functions (WithLogger, GetLogger, NewNoOpLogger)
+- `internal/commands/pipeline.go` - Example command usage pattern
+- `pkg/pipeline/create.go` - Example package function usage pattern
+
 ### Scripting Usage
 ```bash
 #!/bin/bash
-# Create pipeline and check status
-aphex pipeline create my-pipeline --file pipeline.yaml --output json > result.json
+# Create pipeline and check status with debug logging
+aphex pipeline create my-pipeline \
+  --file pipeline.yaml \
+  --log-level=debug \
+  --output json > result.json
+
 if [ $? -eq 0 ]; then
   echo "Pipeline created successfully"
-  aphex pipeline list --namespace tenant-1 --output table
+  aphex pipeline list --output table
 fi
+
+# Separate normal output from errors
+aphex pipeline list --log-level=info > pipelines.txt 2> errors.log
 ```
 
 ### CI/CD Integration
@@ -211,9 +458,10 @@ fi
   run: |
     aphex auth login
     aphex organization bootstrap ${{ github.repository_owner }} \
-      --admin-email admin@company.com
+      --admin-email admin@company.com \
+      --log-level=info
 
-# GitHub Actions example - Pipeline Creation
+# GitHub Actions example - Pipeline Creation with verbose logging
 - name: Deploy Pipeline with Webhook Integration
   run: |
     aphex auth login
@@ -221,7 +469,8 @@ fi
       --file .tekton/pipeline.yaml \
       --aphex-org my-organization \
       --repo-org ${{ github.repository_owner }} \
-      --repo-name ${{ github.event.repository.name }}
+      --repo-name ${{ github.event.repository.name }} \
+      --verbose
 ```
 
 ## Organization Management

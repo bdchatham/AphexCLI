@@ -44,7 +44,7 @@ Check the error message for required group membership and contact your platform 
 1. Validate YAML: `kubectl apply --dry-run=client -f pipeline.yaml`
 2. Check namespace exists: `kubectl get namespace <namespace>`
 3. Verify Tekton is installed: `kubectl get crd pipelines.tekton.dev`
-4. Use `--verbose` flag for detailed output
+4. Use `--log-level=debug` or `--verbose` flag for detailed output
 
 ## Archon-Specific Questions
 

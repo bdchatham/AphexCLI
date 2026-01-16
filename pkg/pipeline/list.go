@@ -2,9 +2,9 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
+	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/output"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,11 +14,12 @@ import (
 type ListOptions struct {
 	OutputFormat output.Format
 	Quiet        bool
-	Verbose      bool
 }
 
 // List lists all Tekton Pipelines across all accessible namespaces
 func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
+	log := logger.GetLogger(ctx)
+	
 	// List all namespaces user has access to
 	namespaceList, err := client.Clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -30,9 +31,7 @@ func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
 		namespaces = append(namespaces, ns.Name)
 	}
 
-	if opts.Verbose {
-		fmt.Printf("Listing pipelines across all namespaces\n")
-	}
+	log.Debugf("Listing pipelines across all namespaces")
 
 	// Collect all pipelines
 	var allPipelines []unstructured.Unstructured
@@ -46,9 +45,7 @@ func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
 
 		if err := result.Error(); err != nil {
 			// Skip namespaces we don't have access to
-			if opts.Verbose {
-				fmt.Printf("Skipping namespace %q: %v\n", namespace, err)
-			}
+			log.Debugf("Skipping namespace %q: %v", namespace, err)
 			continue
 		}
 
@@ -73,9 +70,8 @@ func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
 
 	// Display results using output formatter
 	outputOpts := output.Options{
-		Format:  opts.OutputFormat,
-		Quiet:   opts.Quiet,
-		Verbose: opts.Verbose,
+		Format: opts.OutputFormat,
+		Quiet:  opts.Quiet,
 	}
 	
 	return output.FormatPipelines(allPipelines, outputOpts)

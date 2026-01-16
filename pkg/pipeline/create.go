@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
+	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -32,11 +33,12 @@ type CreateOptions struct {
 	RepoName    string
 	TenantName  string
 	IngressHost string
-	Verbose     bool
 }
 
 // Create creates a Tekton Pipeline from a YAML file
 func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
+	log := logger.GetLogger(ctx)
+	
 	// Validate file exists
 	if _, err := os.Stat(opts.FilePath); os.IsNotExist(err) {
 		return fmt.Errorf("pipeline file not found: %s", opts.FilePath)
@@ -84,9 +86,7 @@ func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
 		return fmt.Errorf("failed to create namespace: %w", err)
 	}
 
-	if opts.Verbose {
-		fmt.Printf("Creating pipeline %q in namespace %q\n", pipeline.GetName(), namespace)
-	}
+	log.Debugf("Creating pipeline %q in namespace %q", pipeline.GetName(), namespace)
 
 	// Create the pipeline with progress indicator
 	err = progress.WithSpinner(fmt.Sprintf("Creating pipeline %q", pipeline.GetName()), func() error {
@@ -101,18 +101,14 @@ func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
 	fmt.Printf("Pipeline %q created successfully in namespace %q\n", pipeline.GetName(), namespace)
 
 	// Verify pipeline was created
-	if opts.Verbose {
-		fmt.Printf("Verifying pipeline creation...\n")
-	}
+	log.Debugf("Verifying pipeline creation...")
 	
 	createdPipeline, err := dynamicClient.Resource(pipelineGVR).Namespace(namespace).Get(ctx, pipeline.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("pipeline was created but verification failed: %w", err)
 	}
 	
-	if opts.Verbose {
-		fmt.Printf("Pipeline verified: %s/%s\n", createdPipeline.GetNamespace(), createdPipeline.GetName())
-	}
+	log.Debugf("Pipeline verified: %s/%s", createdPipeline.GetNamespace(), createdPipeline.GetName())
 
 	// Create RepoBinding
 	if err := createRepoBinding(ctx, dynamicClient, opts, namespace); err != nil {

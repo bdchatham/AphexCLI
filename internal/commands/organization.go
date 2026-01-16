@@ -6,6 +6,7 @@ import (
 
 	"github.com/bdchatham/AphexCLI/pkg/auth"
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
+	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/organization"
 	"github.com/urfave/cli/v3"
 )
@@ -45,11 +46,6 @@ func OrganizationCommand() *cli.Command {
 						Usage:   "Output format (table, json, yaml)",
 						Value:   "table",
 					},
-					&cli.BoolFlag{
-						Name:    "verbose",
-						Aliases: []string{"v"},
-						Usage:   "Verbose output",
-					},
 				},
 				Action: organizationBootstrapAction,
 			},
@@ -71,11 +67,6 @@ func OrganizationCommand() *cli.Command {
 						Name:  "quiet",
 						Usage: "Suppress non-essential output",
 					},
-					&cli.BoolFlag{
-						Name:    "verbose",
-						Aliases: []string{"v"},
-						Usage:   "Verbose output",
-					},
 				},
 				Action: organizationListAction,
 			},
@@ -87,11 +78,6 @@ func OrganizationCommand() *cli.Command {
 					&cli.StringFlag{
 						Name:  "kubeconfig",
 						Usage: "Path to kubeconfig file",
-					},
-					&cli.BoolFlag{
-						Name:    "verbose",
-						Aliases: []string{"v"},
-						Usage:   "Verbose output",
 					},
 					&cli.BoolFlag{
 						Name:  "force",
@@ -127,6 +113,8 @@ func organizationBeforeAction(ctx context.Context, cmd *cli.Command) error {
 }
 
 func organizationBootstrapAction(ctx context.Context, cmd *cli.Command) error {
+	log := logger.GetLogger(ctx)
+	
 	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
@@ -145,13 +133,15 @@ func organizationBootstrapAction(ctx context.Context, cmd *cli.Command) error {
 		DisplayName:   cmd.String("display-name"),
 		AdminEmail:    cmd.String("admin-email"),
 		WebhookSecret: cmd.String("webhook-secret"),
-		Verbose:       cmd.Bool("verbose"),
 	}
 
+	log.Debugf("Bootstrapping organization with options: %+v", opts)
 	return organization.Bootstrap(ctx, client, opts)
 }
 
 func organizationListAction(ctx context.Context, cmd *cli.Command) error {
+	log := logger.GetLogger(ctx)
+	
 	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
@@ -160,14 +150,16 @@ func organizationListAction(ctx context.Context, cmd *cli.Command) error {
 
 	// List organizations
 	opts := organization.ListOptions{
-		Quiet:   cmd.Bool("quiet"),
-		Verbose: cmd.Bool("verbose"),
+		Quiet: cmd.Bool("quiet"),
 	}
 
+	log.Debug("Listing organizations")
 	return organization.List(ctx, client, opts)
 }
 
 func organizationDeleteAction(ctx context.Context, cmd *cli.Command) error {
+	log := logger.GetLogger(ctx)
+	
 	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
@@ -182,10 +174,10 @@ func organizationDeleteAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Delete organization
 	opts := organization.DeleteOptions{
-		Name:    args.First(),
-		Force:   cmd.Bool("force"),
-		Verbose: cmd.Bool("verbose"),
+		Name:  args.First(),
+		Force: cmd.Bool("force"),
 	}
 
+	log.Debugf("Deleting organization: %s", opts.Name)
 	return organization.Delete(ctx, client, opts)
 }

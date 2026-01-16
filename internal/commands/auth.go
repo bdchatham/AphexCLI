@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/bdchatham/AphexCLI/pkg/auth"
+	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/urfave/cli/v3"
 )
 
@@ -21,11 +22,6 @@ func AuthCommand() *cli.Command {
 						Name:  "kubeconfig",
 						Usage: "Path to kubeconfig file",
 					},
-					&cli.BoolFlag{
-						Name:    "verbose",
-						Aliases: []string{"v"},
-						Usage:   "Verbose output",
-					},
 				},
 				Action: authLoginAction,
 			},
@@ -34,10 +30,11 @@ func AuthCommand() *cli.Command {
 }
 
 func authLoginAction(ctx context.Context, cmd *cli.Command) error {
+	log := logger.GetLogger(ctx)
+	
 	opts := auth.LoginOptions{
 		KubeconfigPath: cmd.String("kubeconfig"),
-		Verbose:        cmd.Bool("verbose"),
 	}
 
-	return auth.Login(ctx, opts)
+	return auth.Login(ctx, log, opts)
 }

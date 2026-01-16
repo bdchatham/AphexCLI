@@ -20,6 +20,7 @@ This design follows the Kubernetes operator pattern: the CLI is thin and declara
 - **Webhook Integration**: Automatic GitHub webhook provisioning via RepoBindings
 - **Interactive Mode**: Guided prompts for missing parameters
 - **Multiple Output Formats**: Table, JSON, and YAML output support
+- **Centralized Logging**: Global log level control with `--log-level` and `--verbose` flags
 - **Cross-Platform**: Builds for Linux, macOS, and Windows
 
 ## Installation
@@ -71,6 +72,57 @@ aphex pipeline list
 
 # Delete a pipeline
 aphex pipeline delete my-pipeline
+```
+
+## Logging and Verbosity
+
+The Aphex CLI provides centralized logging control through global flags:
+
+### Global Flags
+
+- **`--log-level <level>`** or **`-l <level>`**: Set the log level (debug, info, warn, error)
+  - Default: `info`
+  - Controls verbosity for all commands
+  
+- **`--verbose`** or **`-v`**: Enable verbose output (equivalent to `--log-level=debug`)
+  - Shorthand for maximum verbosity
+
+### Log Levels
+
+- **debug**: Show all messages including detailed debugging information
+- **info**: Show informational messages and above (default)
+- **warn**: Show warnings and errors only
+- **error**: Show only error messages
+
+### Examples
+
+```bash
+# Run with debug logging to see detailed information
+aphex pipeline create my-pipeline --file pipeline.yaml --log-level=debug
+
+# Use verbose flag for maximum detail
+aphex pipeline list --verbose
+
+# Suppress informational messages, show only warnings and errors
+aphex organization list --log-level=warn
+
+# Show only errors
+aphex pipeline delete my-pipeline --log-level=error
+```
+
+### Output Streams
+
+- Debug and Info messages go to **stdout**
+- Warn and Error messages go to **stderr**
+
+This allows you to separate normal output from error output in scripts:
+
+```bash
+# Capture normal output, display errors
+aphex pipeline list --log-level=debug > pipelines.txt
+
+# Redirect errors to a file
+aphex pipeline create my-pipeline --file pipeline.yaml 2> errors.log
 ```
 
 ## Documentation

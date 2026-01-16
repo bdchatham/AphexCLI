@@ -54,11 +54,6 @@ func PipelineCommand() *cli.Command {
 						Usage:   "Output format (table, json, yaml)",
 						Value:   "table",
 					},
-					&cli.BoolFlag{
-						Name:    "verbose",
-						Aliases: []string{"v"},
-						Usage:   "Verbose output",
-					},
 				},
 				Action: pipelineCreateAction,
 			},
@@ -81,11 +76,6 @@ func PipelineCommand() *cli.Command {
 						Usage:   "Output format (table, json, yaml)",
 						Value:   "table",
 					},
-					&cli.BoolFlag{
-						Name:    "verbose",
-						Aliases: []string{"v"},
-						Usage:   "Verbose output",
-					},
 				},
 				Action: pipelineDeleteAction,
 			},
@@ -106,11 +96,6 @@ func PipelineCommand() *cli.Command {
 					&cli.BoolFlag{
 						Name:  "quiet",
 						Usage: "Suppress non-essential output",
-					},
-					&cli.BoolFlag{
-						Name:    "verbose",
-						Aliases: []string{"v"},
-						Usage:   "Verbose output",
 					},
 				},
 				Action: pipelineListAction,
@@ -176,7 +161,6 @@ func pipelineCreateAction(ctx context.Context, cmd *cli.Command) error {
 		RepoName:    cmd.String("repo-name"),
 		TenantName:  args.First(), // Same as pipeline name
 		IngressHost: "webhooks.homelab.local", // Hardcoded
-		Verbose:     cmd.Bool("verbose"),
 	}
 
 	return pipeline.Create(ctx, client, opts)
@@ -198,9 +182,8 @@ func pipelineDeleteAction(ctx context.Context, cmd *cli.Command) error {
 
 	// Delete pipeline
 	opts := pipeline.DeleteOptions{
-		Name:    pipelineName,
-		Force:   cmd.Bool("force"),
-		Verbose: cmd.Bool("verbose"),
+		Name:  pipelineName,
+		Force: cmd.Bool("force"),
 	}
 
 	return pipeline.Delete(ctx, client, opts)
@@ -220,7 +203,6 @@ func pipelineListAction(ctx context.Context, cmd *cli.Command) error {
 	opts := pipeline.ListOptions{
 		OutputFormat: outputFormat,
 		Quiet:        cmd.Bool("quiet"),
-		Verbose:      cmd.Bool("verbose"),
 	}
 
 	return pipeline.List(ctx, client, opts)

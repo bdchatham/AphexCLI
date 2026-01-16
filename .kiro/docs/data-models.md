@@ -12,9 +12,10 @@ Authentication configuration for OIDC setup.
 ```go
 type LoginOptions struct {
     KubeconfigPath string  // Path to kubeconfig file
-    Verbose        bool    // Enable verbose output
 }
 ```
+
+**Note**: Verbose output is now controlled by global `--log-level` and `--verbose` flags, not per-command options.
 
 ### Pipeline Operation Options
 
@@ -28,9 +29,10 @@ type CreateOptions struct {
     RepoName    string  // GitHub repository name
     TenantName  string  // Tenant name (set to pipeline name)
     IngressHost string  // Ingress host (hardcoded to webhooks.homelab.local)
-    Verbose     bool    // Enable verbose output
 }
 ```
+
+**Note**: The `Verbose bool` field was removed. Logging is now controlled by global `--log-level` and `--verbose` flags.
 
 #### DeleteOptions
 ```go
@@ -38,9 +40,10 @@ type DeleteOptions struct {
     Name      string  // Pipeline name
     Namespace string  // Target namespace
     Force     bool    // Skip confirmation
-    Verbose   bool    // Enable verbose output
 }
 ```
+
+**Note**: The `Verbose bool` field was removed. Logging is now controlled by global `--log-level` and `--verbose` flags.
 
 #### ListOptions
 ```go
@@ -49,9 +52,10 @@ type ListOptions struct {
     AllNamespaces bool          // List across all namespaces
     OutputFormat  output.Format // Output format
     Quiet         bool          // Suppress output
-    Verbose       bool          // Enable verbose output
 }
 ```
+
+**Note**: The `Verbose bool` field was removed. Logging is now controlled by global `--log-level` and `--verbose` flags.
 
 ### Organization Operation Options
 
@@ -62,26 +66,29 @@ type BootstrapOptions struct {
     DisplayName   string  // Human-readable organization name
     AdminEmail    string  // Admin email address
     WebhookSecret string  // GitHub webhook secret (auto-generated if empty)
-    Verbose       bool    // Enable verbose output
 }
 ```
+
+**Note**: The `Verbose bool` field was removed. Logging is now controlled by global `--log-level` and `--verbose` flags.
 
 #### ListOptions
 ```go
 type ListOptions struct {
     Quiet   bool  // Suppress non-essential output
-    Verbose bool  // Enable verbose output
 }
 ```
+
+**Note**: The `Verbose bool` field was removed. Logging is now controlled by global `--log-level` and `--verbose` flags.
 
 #### DeleteOptions
 ```go
 type DeleteOptions struct {
     Name    string  // Organization name
     Force   bool    // Skip confirmation prompt
-    Verbose bool    // Enable verbose output
 }
 ```
+
+**Note**: The `Verbose bool` field was removed. Logging is now controlled by global `--log-level` and `--verbose` flags.
 
 ## Output Models
 

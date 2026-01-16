@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
+	"github.com/bdchatham/AphexCLI/pkg/logger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -16,27 +17,24 @@ import (
 // LoginOptions holds options for authentication
 type LoginOptions struct {
 	KubeconfigPath string
-	Verbose        bool
 }
 
 // Login configures OIDC authentication for the platform
-func Login(ctx context.Context, opts LoginOptions) error {
+func Login(ctx context.Context, log *logger.Logger, opts LoginOptions) error {
 	// Check if kubelogin is installed
 	if err := checkKubeloginInstalled(); err != nil {
 		return err
 	}
 
-	if opts.Verbose {
-		fmt.Println("kubelogin exec plugin found")
-	}
+	log.Debug("kubelogin exec plugin found")
 
 	// Configure kubeconfig
-	if err := configureKubeconfig(opts); err != nil {
+	if err := configureKubeconfig(log, opts); err != nil {
 		return fmt.Errorf("failed to configure kubeconfig: %w", err)
 	}
 
 	// Trigger initial authentication
-	if err := triggerAuthentication(ctx, opts); err != nil {
+	if err := triggerAuthentication(ctx, log, opts); err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -60,7 +58,7 @@ After installation, run 'aphex auth login' again.`)
 }
 
 // configureKubeconfig sets up kubeconfig with OIDC exec plugin
-func configureKubeconfig(opts LoginOptions) error {
+func configureKubeconfig(log *logger.Logger, opts LoginOptions) error {
 	kubeconfigPath := opts.KubeconfigPath
 	if kubeconfigPath == "" {
 		homeDir, err := os.UserHomeDir()
@@ -106,9 +104,7 @@ func configureKubeconfig(opts LoginOptions) error {
 	// Set as current context
 	config.CurrentContext = "aphex"
 
-	if opts.Verbose {
-		fmt.Printf("Configured kubeconfig at %s\n", kubeconfigPath)
-	}
+	log.Debugf("Configured kubeconfig at %s", kubeconfigPath)
 
 	// Write kubeconfig
 	return clientcmd.WriteToFile(*config, kubeconfigPath)
@@ -130,10 +126,8 @@ func loadOrCreateKubeconfig(path string) (*api.Config, error) {
 }
 
 // triggerAuthentication makes a test API call to trigger exec plugin authentication
-func triggerAuthentication(ctx context.Context, opts LoginOptions) error {
-	if opts.Verbose {
-		fmt.Println("Triggering initial authentication...")
-	}
+func triggerAuthentication(ctx context.Context, log *logger.Logger, opts LoginOptions) error {
+	log.Debug("Triggering initial authentication...")
 
 	// Create client to trigger authentication
 	client, err := k8s.NewClient(opts.KubeconfigPath)

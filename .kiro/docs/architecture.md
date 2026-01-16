@@ -11,6 +11,14 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 - **Survey**: Interactive prompts for missing parameters
 - **Cross-platform builds**: Support for Linux, macOS, Windows
 
+### Centralized Logging System
+- **Context-based logger**: Logger injected into context at root command level
+- **Level filtering**: Four log levels (debug, info, warn, error) with automatic filtering
+- **Global flags**: `--log-level` and `--verbose` flags control logging for all commands
+- **Stream routing**: Debug/Info to stdout, Warn/Error to stderr
+- **No-op fallback**: Safe fallback logger when context doesn't contain logger
+- **Package integration**: All commands and packages use `logger.GetLogger(ctx)` for consistent logging
+
 ### Authentication System
 - **OIDC Integration**: Uses kubelogin exec plugin for browser-based authentication
 - **Dex Integration**: Points to platform Dex endpoint (https://dex.home.local)
@@ -69,6 +77,113 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 - **kubelogin**: OIDC exec plugin (external dependency)
 
 ## Architectural Patterns
+
+### Centralized Logging Architecture
+
+The CLI implements a centralized logging system that encapsulates verbosity complexity and provides consistent logging across all commands and packages.
+
+#### Logger Package Structure
+
+**Location**: `pkg/logger/`
+
+The logger package provides two main components:
+
+1. **Logger Struct** (`logger.go`):
+   - Encapsulates log level filtering logic
+   - Provides methods: `Debug()`, `Info()`, `Warn()`, `Error()` and formatted variants
+   - Routes output to appropriate streams (stdout for Debug/Info, stderr for Warn/Error)
+   - Performs level filtering automatically (e.g., Debug messages don't appear at Info level)
+
+2. **Context Integration** (`context.go`):
+   - `WithLogger(ctx, logger)`: Injects logger into context
+   - `GetLogger(ctx)`: Retrieves logger from context
+   - `NewNoOpLogger()`: Provides fail-safe fallback logger that discards output
+
+#### Log Levels and Filtering
+
+The logger supports four levels with hierarchical filtering:
+
+| Level | Debug | Info | Warn | Error |
+|-------|-------|------|------|-------|
+| debug | ✓     | ✓    | ✓    | ✓     |
+| info  | ✗     | ✓    | ✓    | ✓     |
+| warn  | ✗     | ✗    | ✓    | ✓     |
+| error | ✗     | ✗    | ✗    | ✓     |
+
+Messages are automatically filtered based on the configured level. For example, if the logger is set to `info` level, `Debug()` calls produce no output.
+
+#### Context Propagation Flow
+
+```
+Root Command (main.go)
+  ├─ Parse --log-level or --verbose flag
+  ├─ Create Logger with specified level
+  └─ Inject Logger into Context via Before hook
+      │
+      ▼
+Subcommands (internal/commands/*.go)
+  ├─ Receive context with logger
+  ├─ Call logger := logger.GetLogger(ctx)
+  └─ Use logger.Debug/Info/Warn/Error methods
+      │
+      ▼
+Package Functions (pkg/*/*.go)
+  ├─ Receive context as first parameter
+  ├─ Call logger := logger.GetLogger(ctx)
+  └─ Use logger methods for all logging
+```
+
+#### Design Benefits
+
+1. **Separation of Concerns**: Commands and packages focus on business logic, not logging mechanics
+2. **Single Configuration Point**: Log level set once at root command, applies everywhere
+3. **Type-Safe Context Keys**: Uses typed context keys to prevent collisions
+4. **Fail-Safe Design**: Returns no-op logger if context doesn't contain logger (prevents panics)
+5. **Clean API**: Simple method calls (`logger.Debug("msg")`) without flag checking
+6. **Consistent Formatting**: All log messages include level prefix ([DEBUG], [INFO], [WARN], [ERROR])
+
+#### Migration from Individual Verbose Flags
+
+The centralized logging system replaces the previous pattern of individual `--verbose` flags on each command:
+
+**Before**:
+```go
+// Each command had its own --verbose flag
+&cli.BoolFlag{Name: "verbose", Aliases: []string{"v"}}
+
+// Commands checked the flag
+if cmd.Bool("verbose") {
+    fmt.Printf("Debug message\n")
+}
+
+// Packages received verbose as parameter
+type CreateOptions struct {
+    Verbose bool
+}
+```
+
+**After**:
+```go
+// Global flags on root command only
+&cli.StringFlag{Name: "log-level", Value: "info"}
+&cli.BoolFlag{Name: "verbose"} // Shorthand for --log-level=debug
+
+// Commands use logger from context
+logger := logger.GetLogger(ctx)
+logger.Debug("Debug message")
+
+// Packages use logger from context
+type CreateOptions struct {
+    // No Verbose field
+}
+```
+
+This eliminates scattered verbosity logic and provides consistent behavior across the entire CLI.
+
+**Source**
+- `pkg/logger/logger.go` - Logger implementation with level filtering and stream routing
+- `pkg/logger/context.go` - Context integration and no-op logger fallback
+- `cmd/aphex/main.go` - Root command logger injection via Before hook
 
 ### Standard kubectl Patterns
 - Uses standard kubeconfig discovery (--kubeconfig flag → KUBECONFIG env → ~/.kube/config)

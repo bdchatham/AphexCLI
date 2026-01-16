@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
+	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -13,13 +14,14 @@ import (
 
 // DeleteOptions holds options for pipeline deletion
 type DeleteOptions struct {
-	Name    string
-	Force   bool
-	Verbose bool
+	Name  string
+	Force bool
 }
 
 // Delete deletes a Tekton Pipeline by name (using pipeline name as namespace)
 func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
+	log := logger.GetLogger(ctx)
+	
 	// Create dynamic client
 	dynamicClient, err := dynamic.NewForConfig(client.Config)
 	if err != nil {
@@ -29,9 +31,7 @@ func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
 	// Use pipeline name as namespace (since names are globally unique)
 	targetNamespace := opts.Name
 
-	if opts.Verbose {
-		fmt.Printf("Deleting pipeline %q from namespace %q\n", opts.Name, targetNamespace)
-	}
+	log.Debugf("Deleting pipeline %q from namespace %q", opts.Name, targetNamespace)
 
 	// Delete the pipeline with progress indicator
 	err = progress.WithSpinner(fmt.Sprintf("Deleting pipeline %q", opts.Name), func() error {
@@ -53,9 +53,7 @@ func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
 
 	// Delete namespace if empty (only contains the pipeline we just deleted)
 	if err := deleteNamespaceIfEmpty(ctx, dynamicClient, targetNamespace); err != nil {
-		if opts.Verbose {
-			fmt.Printf("Note: Namespace %q not deleted (may contain other resources): %v\n", targetNamespace, err)
-		}
+		log.Debugf("Note: Namespace %q not deleted (may contain other resources): %v", targetNamespace, err)
 	} else {
 		fmt.Printf("Namespace %q deleted successfully\n", targetNamespace)
 	}
