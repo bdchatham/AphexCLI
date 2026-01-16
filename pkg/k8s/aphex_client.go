@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewTypedClient(config *rest.Config) (client.Client, error) {
+func NewAphexClient(config *rest.Config) (client.Client, error) {
 	scheme := runtime.NewScheme()
 
 	if err := corev1.AddToScheme(scheme); err != nil {

@@ -19,7 +19,7 @@ type ListOptions struct {
 func List(ctx context.Context, k8sClient *k8s.Client, opts ListOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
+	aphexClient, err := k8s.NewAphexClient(k8sClient.Config)
 	if err != nil {
 		return err
 	}

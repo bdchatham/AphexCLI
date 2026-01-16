@@ -54,7 +54,7 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 		return fmt.Errorf("pipeline name is required (specify via command line argument or metadata.name in YAML)")
 	}
 
-	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
+	aphexClient, err := k8s.NewAphexClient(k8sClient.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create typed client: %w", err)
 	}

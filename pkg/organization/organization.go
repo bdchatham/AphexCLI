@@ -34,7 +34,7 @@ type DeleteOptions struct {
 func Bootstrap(ctx context.Context, k8sClient *k8s.Client, opts BootstrapOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
+	aphexClient, err := k8s.NewAphexClient(k8sClient.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create typed client: %w", err)
 	}
@@ -79,7 +79,7 @@ func Bootstrap(ctx context.Context, k8sClient *k8s.Client, opts BootstrapOptions
 func List(ctx context.Context, k8sClient *k8s.Client, opts ListOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
+	aphexClient, err := k8s.NewAphexClient(k8sClient.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create typed client: %w", err)
 	}
@@ -132,7 +132,7 @@ func List(ctx context.Context, k8sClient *k8s.Client, opts ListOptions) error {
 func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
+	aphexClient, err := k8s.NewAphexClient(k8sClient.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create typed client: %w", err)
 	}

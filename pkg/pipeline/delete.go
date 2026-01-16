@@ -21,7 +21,7 @@ type DeleteOptions struct {
 func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
+	aphexClient, err := k8s.NewAphexClient(k8sClient.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create typed client: %w", err)
 	}
