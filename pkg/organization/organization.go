@@ -4,29 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	platformv1alpha1 "github.com/bdchatham/ArbiterPipelineInfrastructure/platform/platform-controller/controller/api/v1alpha1"
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
 	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	// Organization GroupVersionResource
-	organizationGVR = schema.GroupVersionResource{
-		Group:    "arbiter.io",
-		Version:  "v1alpha1",
-		Resource: "organizations",
-	}
-	
-	// Platform system namespace where organizations are managed
-	platformSystemNamespace = "platform-system"
-)
+const platformSystemNamespace = "platform-system"
 
-// BootstrapOptions holds options for organization bootstrapping
 type BootstrapOptions struct {
 	Name          string
 	DisplayName   string
@@ -34,55 +22,47 @@ type BootstrapOptions struct {
 	WebhookSecret string
 }
 
-// ListOptions holds options for organization listing
 type ListOptions struct {
 	Quiet bool
 }
 
-// Bootstrap creates a new Organization resource
-func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) error {
+type DeleteOptions struct {
+	Name  string
+	Force bool
+}
+
+func Bootstrap(ctx context.Context, k8sClient *k8s.Client, opts BootstrapOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	// Create dynamic client
-	dynamicClient, err := dynamic.NewForConfig(client.Config)
+	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
 	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
+		return fmt.Errorf("failed to create typed client: %w", err)
 	}
 
-	// Set display name default
 	displayName := opts.DisplayName
 	if displayName == "" {
 		displayName = opts.Name
 	}
 
-	// Build Organization resource
-	organization := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "arbiter.io/v1alpha1",
-			"kind":       "Organization",
-			"metadata": map[string]interface{}{
-				"name":      opts.Name,
-				"namespace": platformSystemNamespace,
-			},
-			"spec": map[string]interface{}{
-				"displayName": displayName,
-				"adminUsers":  []string{opts.AdminEmail},
-			},
+	organization := &platformv1alpha1.Organization{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      opts.Name,
+			Namespace: platformSystemNamespace,
+		},
+		Spec: platformv1alpha1.OrganizationSpec{
+			DisplayName: displayName,
+			AdminUsers:  []string{opts.AdminEmail},
 		},
 	}
 
-	// Add webhook secret if provided
 	if opts.WebhookSecret != "" {
-		spec := organization.Object["spec"].(map[string]interface{})
-		spec["webhookSecret"] = opts.WebhookSecret
+		organization.Spec.WebhookSecret = opts.WebhookSecret
 	}
 
 	log.Debugf("Creating organization %q with admin %q", opts.Name, opts.AdminEmail)
 
-	// Create the organization with progress indicator
 	err = progress.WithSpinner(fmt.Sprintf("Bootstrapping organization %q", opts.Name), func() error {
-		_, err := dynamicClient.Resource(organizationGVR).Namespace(platformSystemNamespace).Create(ctx, organization, metav1.CreateOptions{})
-		return err
+		return aphexClient.Create(ctx, organization)
 	})
 
 	if err != nil {
@@ -96,21 +76,18 @@ func Bootstrap(ctx context.Context, client *k8s.Client, opts BootstrapOptions) e
 	return nil
 }
 
-// List lists all Organization resources
-func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
+func List(ctx context.Context, k8sClient *k8s.Client, opts ListOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	// Create dynamic client
-	dynamicClient, err := dynamic.NewForConfig(client.Config)
+	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
 	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
+		return fmt.Errorf("failed to create typed client: %w", err)
 	}
 
 	log.Debug("Listing organizations...")
 
-	// List organizations
-	orgList, err := dynamicClient.Resource(organizationGVR).Namespace(platformSystemNamespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
+	orgList := &platformv1alpha1.OrganizationList{}
+	if err := aphexClient.List(ctx, orgList, client.InNamespace(platformSystemNamespace)); err != nil {
 		return k8s.FormatError(err)
 	}
 
@@ -121,93 +98,53 @@ func List(ctx context.Context, client *k8s.Client, opts ListOptions) error {
 		return nil
 	}
 
-	// Display organizations
 	if !opts.Quiet {
 		fmt.Printf("%-20s %-30s %-15s %-10s\n", "NAME", "DISPLAY NAME", "NAMESPACE", "PHASE")
 		fmt.Printf("%-20s %-30s %-15s %-10s\n", "----", "------------", "---------", "-----")
 	}
 
 	for _, org := range orgList.Items {
-		name := org.GetName()
-		
-		// Extract fields safely
-		displayName := extractStringField(org.Object, "spec", "displayName")
-		namespace := extractStringField(org.Object, "status", "namespace")
-		phase := extractStringField(org.Object, "status", "phase")
-		
+		displayName := org.Spec.DisplayName
 		if displayName == "" {
-			displayName = name
+			displayName = org.Name
 		}
+		
+		namespace := org.Status.Namespace
 		if namespace == "" {
-			namespace = fmt.Sprintf("org-%s", name)
+			namespace = fmt.Sprintf("org-%s", org.Name)
 		}
+		
+		phase := org.Status.Phase
 		if phase == "" {
 			phase = "Pending"
 		}
 
 		if opts.Quiet {
-			fmt.Println(name)
+			fmt.Println(org.Name)
 		} else {
-			fmt.Printf("%-20s %-30s %-15s %-10s\n", name, displayName, namespace, phase)
+			fmt.Printf("%-20s %-30s %-15s %-10s\n", org.Name, displayName, namespace, phase)
 		}
 	}
 
 	return nil
 }
 
-// extractStringField safely extracts a string field from nested map structure
-func extractStringField(obj map[string]interface{}, keys ...string) string {
-	current := obj
-	for i, key := range keys {
-		if i == len(keys)-1 {
-			// Last key - extract the value
-			if val, ok := current[key].(string); ok {
-				return val
-			}
-			return ""
-		}
-		// Intermediate key - navigate deeper
-		if next, ok := current[key].(map[string]interface{}); ok {
-			current = next
-		} else {
-			return ""
-		}
-	}
-	return ""
-}
-
-// DeleteOptions holds options for organization deletion
-type DeleteOptions struct {
-	Name  string
-	Force bool
-}
-
-// Delete deletes an organization and all its resources
-func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
+func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) error {
 	log := logger.GetLogger(ctx)
 	
-	// Create dynamic client
-	dynamicClient, err := dynamic.NewForConfig(client.Config)
+	aphexClient, err := k8s.NewTypedClient(k8sClient.Config)
 	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
+		return fmt.Errorf("failed to create typed client: %w", err)
 	}
 
-	orgGVR := schema.GroupVersionResource{
-		Group:    "arbiter.io",
-		Version:  "v1alpha1",
-		Resource: "organizations",
-	}
-
-	// Check if organization exists
-	_, err = dynamicClient.Resource(orgGVR).Namespace(platformSystemNamespace).Get(ctx, opts.Name, metav1.GetOptions{})
-	if err != nil {
+	organization := &platformv1alpha1.Organization{}
+	if err := aphexClient.Get(ctx, client.ObjectKey{Name: opts.Name, Namespace: platformSystemNamespace}, organization); err != nil {
 		if errors.IsNotFound(err) {
 			return fmt.Errorf("organization %q not found", opts.Name)
 		}
 		return fmt.Errorf("failed to get organization: %w", err)
 	}
 
-	// Confirmation prompt unless --force is used
 	if !opts.Force {
 		fmt.Printf("This will delete organization %q and ALL associated resources including:\n", opts.Name)
 		fmt.Printf("  - Organization namespace (org-%s)\n", opts.Name)
@@ -226,9 +163,8 @@ func Delete(ctx context.Context, client *k8s.Client, opts DeleteOptions) error {
 
 	log.Debugf("Deleting organization %q...", opts.Name)
 
-	// Delete the organization (cascading delete via finalizers and owner references)
 	err = progress.WithSpinner(fmt.Sprintf("Deleting organization %q", opts.Name), func() error {
-		return dynamicClient.Resource(orgGVR).Namespace(platformSystemNamespace).Delete(ctx, opts.Name, metav1.DeleteOptions{})
+		return aphexClient.Delete(ctx, organization)
 	})
 
 	if err != nil {
