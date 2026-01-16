@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	platformv1alpha1 "github.com/bdchatham/ArbiterPipelineInfrastructure/platform/platform-controller/controller/api/v1alpha1"
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
 	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -110,8 +113,8 @@ func Create(ctx context.Context, client *k8s.Client, opts CreateOptions) error {
 	
 	log.Debugf("Pipeline verified: %s/%s", createdPipeline.GetNamespace(), createdPipeline.GetName())
 
-	// Create RepoBinding
-	if err := createRepoBinding(ctx, dynamicClient, opts, namespace); err != nil {
+	// Create RepoBinding with pipeline YAML
+	if err := createRepoBinding(ctx, client, opts, namespace, pipelineData); err != nil {
 		return fmt.Errorf("failed to create RepoBinding: %w", err)
 	}
 
@@ -149,32 +152,35 @@ func ensureNamespaceExists(ctx context.Context, dynamicClient dynamic.Interface,
 	return err
 }
 
-// createRepoBinding creates a RepoBinding for the pipeline
-func createRepoBinding(ctx context.Context, dynamicClient dynamic.Interface, opts CreateOptions, pipelineNamespace string) error {
-	repoBindingGVR := schema.GroupVersionResource{
-		Group:    "arbiter.io",
-		Version:  "v1alpha1",
-		Resource: "repobindings",
+// createRepoBinding creates a RepoBinding using controller-runtime client with typed structs
+func createRepoBinding(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions, pipelineNamespace string, pipelineYAML []byte) error {
+	// Create scheme and register our types
+	scheme := runtime.NewScheme()
+	if err := platformv1alpha1.AddToScheme(scheme); err != nil {
+		return fmt.Errorf("failed to add types to scheme: %w", err)
 	}
 
-	repoBinding := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "arbiter.io/v1alpha1",
-			"kind":       "RepoBinding",
-			"metadata": map[string]interface{}{
-				"name":      fmt.Sprintf("%s-binding", opts.Name),
-				"namespace": "platform-system",
-			},
-			"spec": map[string]interface{}{
-				"aphexOrg":     opts.AphexOrg,
-				"repoOrg":      opts.RepoOrg,
-				"repoName":     opts.RepoName,
-				"pipelineName": opts.Name,
-				"templateRef":  "run-pipeline-v1",
-			},
+	// Create controller-runtime client
+	runtimeClient, err := client.New(k8sClient.Config, client.Options{Scheme: scheme})
+	if err != nil {
+		return fmt.Errorf("failed to create runtime client: %w", err)
+	}
+
+	// Create typed RepoBinding
+	repoBinding := &platformv1alpha1.RepoBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-binding", opts.Name),
+			Namespace: "platform-system",
+		},
+		Spec: platformv1alpha1.RepoBindingSpec{
+			AphexOrg:     opts.AphexOrg,
+			RepoOrg:      opts.RepoOrg,
+			RepoName:     opts.RepoName,
+			PipelineName: opts.Name,
+			TemplateRef:  "run-pipeline-v1",
+			PipelineSpec: string(pipelineYAML),
 		},
 	}
 
-	_, err := dynamicClient.Resource(repoBindingGVR).Namespace("platform-system").Create(ctx, repoBinding, metav1.CreateOptions{})
-	return err
+	return runtimeClient.Create(ctx, repoBinding)
 }
