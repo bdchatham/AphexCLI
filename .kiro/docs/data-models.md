@@ -120,14 +120,23 @@ type PermissionError struct {
 ## Client Models
 
 ### Kubernetes Client
-Wrapper around client-go with additional context.
+Typed controller-runtime client with registered schemes for all resource types.
 
 ```go
-type Client struct {
-    Clientset *kubernetes.Clientset  // K8s client
-    Config    *rest.Config           // REST config
-    Namespace string                 // Default namespace
+// Created via NewAphexClient() in pkg/k8s/aphex_client.go
+type Client interface {
+    Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
+    List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error
+    Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
+    Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error
+    // ... other controller-runtime client methods
 }
+
+// Registered types in scheme:
+// - corev1.Namespace
+// - tektonv1.Pipeline
+// - platformv1alpha1.Organization
+// - platformv1alpha1.RepoBinding
 ```
 
 ## Data Flow
@@ -160,4 +169,4 @@ type Client struct {
 - `pkg/organization/` - Organization operation models
 - `pkg/output/formatter.go` - Output models
 - `pkg/auth/permissions.go` - Error models
-- `pkg/k8s/client.go` - Client models
+- `pkg/k8s/aphex_client.go` - Typed client setup and scheme registration

@@ -25,8 +25,9 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 - **Standard kubeconfig**: Follows kubectl discovery patterns
 
 ### Kubernetes Integration
-- **client-go**: Standard Kubernetes client library
-- **Dynamic client**: Proper dynamic client for Tekton Pipeline and RepoBinding resource management
+- **controller-runtime client**: Typed client with compile-time type safety for all Kubernetes resources
+- **Typed structs**: Uses tektonv1.Pipeline, platformv1alpha1.Organization, and corev1.Namespace instead of unstructured data
+- **Shared client setup**: Centralized aphex_client.go registers all required types (core, platform, Tekton) in scheme
 - **RBAC-aware**: Respects platform namespace isolation and permissions
 - **Cross-namespace operations**: Searches across namespaces for pipeline discovery
 - **Automatic resource provisioning**: Creates namespaces and RepoBindings automatically
@@ -71,7 +72,8 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 
 - **Go 1.25**: Primary programming language
 - **urfave/cli v3**: CLI framework
-- **Kubernetes client-go**: Kubernetes API integration
+- **controller-runtime**: Kubernetes client with typed resource support
+- **Tekton Pipeline v1**: Typed Pipeline structs and API
 - **Survey v2**: Interactive prompts
 - **gopter**: Property-based testing
 - **kubelogin**: OIDC exec plugin (external dependency)
@@ -184,6 +186,7 @@ This eliminates scattered verbosity logic and provides consistent behavior acros
 - `pkg/logger/logger.go` - Logger implementation with level filtering and stream routing
 - `pkg/logger/context.go` - Context integration and no-op logger fallback
 - `cmd/aphex/main.go` - Root command logger injection via Before hook
+- `pkg/k8s/aphex_client.go` - Typed Kubernetes client setup with scheme registration
 
 ### Standard kubectl Patterns
 - Uses standard kubeconfig discovery (--kubeconfig flag → KUBECONFIG env → ~/.kube/config)
@@ -214,7 +217,7 @@ This eliminates scattered verbosity logic and provides consistent behavior acros
 **Source**
 - `cmd/aphex/main.go` - CLI application structure
 - `internal/commands/` - Command implementations
-- `pkg/k8s/client.go` - Kubernetes client wrapper
+- `pkg/k8s/aphex_client.go` - Typed Kubernetes client with scheme registration
 - `pkg/auth/login.go` - OIDC authentication setup
 - `pkg/organization/` - Organization management
 - `go.mod` - Go dependencies
