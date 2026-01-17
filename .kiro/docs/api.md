@@ -659,5 +659,5 @@ status:
 - `internal/commands/knowledgebase.go` - Knowledge base commands
 - `pkg/knowledgebase/knowledgebase.go` - Knowledge base business logic
 - `pkg/knowledgebase/formatter.go` - Knowledge base output formatting
-- `ArbiterPipelineInfrastructure/platform/platform-controller/controller/api/v1alpha1/knowledgebase_types.go` - KnowledgeBase CRD definition
-- `ArbiterPipelineInfrastructure/platform/platform-controller/controller/controllers/knowledgebase_controller.go` - KnowledgeBase controller
+- `AphexPlatformInfrastructure/platform/platform-controller/controller/api/v1alpha1/knowledgebase_types.go` - KnowledgeBase CRD definition
+- `AphexPlatformInfrastructure/platform/platform-controller/controller/controllers/knowledgebase_controller.go` - KnowledgeBase controller

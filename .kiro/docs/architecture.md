@@ -46,7 +46,7 @@ The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter p
 
 ### Kubernetes Operator Pattern
 - **Declarative CLI**: CLI only creates RepoBinding CRDs, doesn't provision resources directly
-- **Controller Reconciliation**: RepoBinding controller in ArbiterPipelineInfrastructure handles all provisioning
+- **Controller Reconciliation**: RepoBinding controller in AphexPlatformInfrastructure handles all provisioning
 - **Separation of Concerns**: CLI handles user interaction, controller handles infrastructure
 - **Kubernetes-Driven**: All resource management through Kubernetes reconciliation loops
 
