@@ -17,6 +17,7 @@ This design follows the Kubernetes operator pattern: the CLI is thin and declara
 - **OIDC Authentication**: Browser-based authentication via platform Dex
 - **Organization Management**: Bootstrap and manage multi-tenant organizations
 - **Pipeline Management**: Create, delete, and list Tekton pipelines
+- **Knowledge Base Management**: Create, delete, and list knowledge bases for Archon documentation tracking
 - **Webhook Integration**: Automatic GitHub webhook provisioning via RepoBindings
 - **Interactive Mode**: Guided prompts for missing parameters
 - **Multiple Output Formats**: Table, JSON, and YAML output support
@@ -72,7 +73,75 @@ aphex pipeline list
 
 # Delete a pipeline
 aphex pipeline delete my-pipeline
+
+# Create a knowledge base for documentation tracking
+aphex knowledgebase create platform-docs \
+  --namespace platform-system \
+  --repo-url https://github.com/bdchatham/ArbiterPipelineInfrastructure \
+  --branch main \
+  --docs-path .kiro/docs
+
+# List knowledge bases
+aphex knowledgebase list
+
+# Delete a knowledge base
+aphex knowledgebase delete platform-docs --namespace platform-system
 ```
+
+## Knowledge Base Management
+
+Knowledge bases track documentation repositories for the Archon RAG system. The CLI provides commands to manage KnowledgeBase custom resources.
+
+### Create a Knowledge Base
+
+```bash
+# Create with all parameters
+aphex knowledgebase create my-kb \
+  --namespace default \
+  --repo-url https://github.com/org/repo \
+  --branch main \
+  --docs-path .kiro/docs
+
+# Interactive mode (prompts for missing parameters)
+aphex knowledgebase create my-kb --namespace default
+
+# Multiple repositories can be added by creating multiple knowledge bases
+# or by editing the KnowledgeBase resource directly
+```
+
+### List Knowledge Bases
+
+```bash
+# List all knowledge bases (table format)
+aphex knowledgebase list
+
+# JSON output
+aphex knowledgebase list --output json
+
+# YAML output
+aphex knowledgebase list --output yaml
+
+# Quiet mode (names only)
+aphex knowledgebase list --quiet
+```
+
+### Delete a Knowledge Base
+
+```bash
+# Delete with confirmation prompt
+aphex knowledgebase delete my-kb --namespace default
+
+# Skip confirmation
+aphex knowledgebase delete my-kb --namespace default --force
+```
+
+### Knowledge Base Details
+
+When you create a knowledge base:
+- A KnowledgeBase custom resource is created in the specified namespace
+- The platform controller validates the repository URL and documentation path
+- The Archon agent monitors the specified repositories for documentation changes
+- Documentation is ingested into the vector store for RAG queries
 
 ## Logging and Verbosity
 

@@ -202,6 +202,82 @@ Global Options:
 - Lists pipelines from all accessible namespaces automatically
 - No namespace specification required or supported
 
+### Knowledge Base Commands
+
+#### `aphex knowledgebase create`
+Create a new KnowledgeBase resource for tracking documentation repositories.
+
+```bash
+aphex knowledgebase create <name> [options]
+
+Options:
+  --namespace string      Namespace for the knowledge base [default: default]
+  --repo-url string       Repository URL (https://github.com/org/repo)
+  --branch string         Git branch to track [default: main]
+  --docs-path string      Documentation path within repository [default: .kiro/docs]
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
+```
+
+**Behavior:**
+- Creates KnowledgeBase CRD in specified namespace
+- Validates repository URL starts with https://github.com/
+- Validates documentation path starts with .kiro/docs
+- Supports interactive mode when --repo-url is not provided
+- Platform controller reconciles and validates the resource
+
+**Interactive Mode:**
+When --repo-url is not provided, prompts for:
+- Repository URL
+- Git branch (default: main)
+- Documentation path (default: .kiro/docs)
+
+#### `aphex knowledgebase list`
+List all KnowledgeBase resources across all namespaces.
+
+```bash
+aphex knowledgebase list [options]
+
+Options:
+  --output, -o string     Output format (table, json, yaml)
+  --quiet                 Suppress non-essential output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
+```
+
+**Behavior:**
+- Lists knowledge bases from all accessible namespaces
+- Displays name, namespace, repository count, and phase
+- Supports table, JSON, and YAML output formats
+
+#### `aphex knowledgebase delete`
+Delete a KnowledgeBase resource.
+
+```bash
+aphex knowledgebase delete <name> [options]
+
+Options:
+  --namespace string      Namespace of the knowledge base [default: default]
+  --force                 Skip confirmation prompt
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
+```
+
+**Behavior:**
+- Fetches KnowledgeBase resource to display details
+- Shows confirmation prompt with tracked repositories
+- Deletes KnowledgeBase CRD from specified namespace
+- Confirmation can be skipped with --force flag
+
 ## Authentication
 
 Uses OIDC authentication via kubelogin exec plugin:
@@ -538,3 +614,50 @@ spec:
 - `internal/commands/pipeline.go` - Pipeline commands  
 - `pkg/output/formatter.go` - Output formatting
 - `pkg/auth/errors.go` - Error message formatting
+
+
+## Knowledge Base Management
+
+Knowledge bases track documentation repositories for the Archon RAG system. The CLI provides commands to manage KnowledgeBase custom resources that specify which repositories to monitor for documentation changes.
+
+**Created Resources:**
+- KnowledgeBase CRD in specified namespace
+- Platform controller validates and reconciles the resource
+- Archon agent monitors specified repositories
+
+**KnowledgeBase Specification:**
+```yaml
+apiVersion: arbiter.io/v1alpha1
+kind: KnowledgeBase
+metadata:
+  name: {knowledge-base-name}
+  namespace: {namespace}
+spec:
+  displayName: {knowledge-base-name}
+  repositories:
+    - url: https://github.com/org/repo
+      branch: main
+      paths:
+        - .kiro/docs
+status:
+  phase: Ready
+  message: "Tracking 1 repositories"
+  lastReconcileTime: "2026-01-16T10:30:00Z"
+```
+
+**Validation Rules:**
+- Repository URLs must start with `https://github.com/`
+- Documentation paths must start with `.kiro/docs`
+- At least one repository must be specified
+
+**Integration with Archon:**
+- Archon agent monitors repositories specified in KnowledgeBase resources
+- Documentation changes trigger re-ingestion into vector store
+- RAG queries use ingested documentation for context
+
+**Source**
+- `internal/commands/knowledgebase.go` - Knowledge base commands
+- `pkg/knowledgebase/knowledgebase.go` - Knowledge base business logic
+- `pkg/knowledgebase/formatter.go` - Knowledge base output formatting
+- `ArbiterPipelineInfrastructure/platform/platform-controller/controller/api/v1alpha1/knowledgebase_types.go` - KnowledgeBase CRD definition
+- `ArbiterPipelineInfrastructure/platform/platform-controller/controller/controllers/knowledgebase_controller.go` - KnowledgeBase controller
