@@ -3,10 +3,10 @@
 ## General Questions
 
 ### What is this repository for?
-The Aphex CLI is a command-line tool for managing Tekton pipelines on the Arbiter platform. It provides a simplified interface for creating, deleting, and listing pipeline instances without requiring deep Kubernetes knowledge.
+The Aphex CLI is a command-line tool for managing Tekton pipelines on the Aphex platform. It provides a simplified interface for creating, deleting, and listing pipeline instances without requiring deep Kubernetes knowledge.
 
 ### How does this fit into the larger system?
-The CLI integrates with the Arbiter platform's Kubernetes cluster and authentication system. It uses OIDC authentication via Dex and manages Tekton Pipeline resources in tenant namespaces.
+The CLI integrates with the Aphex platform's Kubernetes cluster and authentication system. It uses OIDC authentication via Dex and manages Tekton Pipeline resources in tenant namespaces.
 
 ## Development Questions
 

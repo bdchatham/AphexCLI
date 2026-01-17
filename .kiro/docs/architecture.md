@@ -2,7 +2,7 @@
 
 ## System Design
 
-The Aphex CLI is a Go-based command-line tool that integrates with the Arbiter platform's Kubernetes cluster and authentication system. It uses standard kubectl patterns for configuration discovery and OIDC authentication via exec plugins.
+The Aphex CLI is a Go-based command-line tool that integrates with the Aphex platform's Kubernetes cluster and authentication system. It uses standard kubectl patterns for configuration discovery and OIDC authentication via exec plugins.
 
 ## Components
 
@@ -206,7 +206,7 @@ This eliminates scattered verbosity logic and provides consistent behavior acros
 ## Dependencies
 
 ### Upstream Dependencies
-- **Arbiter Platform**: Kubernetes cluster with Tekton and Dex
+- **Aphex Platform**: Kubernetes cluster with Tekton and Dex
 - **kubelogin**: OIDC exec plugin for authentication
 - **Dex**: OIDC authentication endpoint (https://dex.home.local)
 

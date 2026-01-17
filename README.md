@@ -1,10 +1,10 @@
 # Aphex CLI
 
-A command-line tool for managing Tekton pipelines and organizations on the Arbiter platform.
+A command-line tool for managing Tekton pipelines and organizations on the Aphex platform.
 
 ## How It Works
 
-The Aphex CLI provides a thin, declarative interface to the Arbiter Pipeline Infrastructure:
+The Aphex CLI provides a thin, declarative interface to the Aphex Pipeline Infrastructure:
 
 1. **CLI creates RepoBinding CRD**: The CLI reads your pipeline YAML and creates a RepoBinding custom resource with the pipeline definition embedded
 2. **Controller reconciles**: The RepoBinding controller in AphexPlatformInfrastructure watches for RepoBinding resources and provisions all necessary infrastructure

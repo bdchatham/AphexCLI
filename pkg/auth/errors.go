@@ -67,7 +67,7 @@ func (e *PermissionError) FriendlyMessage() string {
 	msg.WriteString("To request access:\n")
 	msg.WriteString("1. Contact your platform administrator\n")
 	msg.WriteString("2. Request membership in the required group\n")
-	msg.WriteString("3. See platform access control documentation: https://docs.arbiter.example.com/access-control\n")
+	msg.WriteString("3. See platform access control documentation: https://docs.aphex.example.com/access-control\n")
 	
 	return msg.String()
 }

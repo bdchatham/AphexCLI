@@ -243,7 +243,7 @@ var (
 func main() {
 	app := &cli.Command{
 		Name:    "aphex",
-		Usage:   "Manage Tekton pipelines on the Arbiter platform",
+		Usage:   "Manage Tekton pipelines on the Aphex platform",
 		Version: Version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -636,7 +636,7 @@ This change maintains backward compatibility:
 
 **Design Principles:**
 - `AphexCLI/CLAUDE.md` - Code quality standards and design principles
-- `ArbiterPipelineInfrastructure/CLAUDE.md` - Clean code principles
+- `AphexPipelineInfrastructure/CLAUDE.md` - Clean code principles
 
 **Dependencies:**
 - `github.com/urfave/cli/v3` - CLI framework with context support

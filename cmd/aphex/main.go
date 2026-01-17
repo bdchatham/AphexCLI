@@ -45,7 +45,7 @@ func main() {
 
 	app := &cli.Command{
 		Name:    "aphex",
-		Usage:   "Manage Tekton pipelines on the Arbiter platform",
+		Usage:   "Manage Tekton pipelines on the Aphex platform",
 		Version: Version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{

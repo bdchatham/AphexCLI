@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Aphex CLI is a command-line tool for managing Tekton pipelines on the Arbiter platform. It provides a simplified interface for creating, deleting, and listing pipeline instances using native Tekton concepts, without requiring deep Kubernetes knowledge.
+The Aphex CLI is a command-line tool for managing Tekton pipelines on the Aphex platform. It provides a simplified interface for creating, deleting, and listing pipeline instances using native Tekton concepts, without requiring deep Kubernetes knowledge.
 
 ## Key Features
 

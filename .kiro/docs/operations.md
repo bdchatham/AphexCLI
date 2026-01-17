@@ -65,7 +65,7 @@ No automated alerting configured. Issues reported via:
 **Resolution**:
 1. Validate YAML file: `kubectl apply --dry-run=client -f pipeline.yaml`
 2. Verify required parameters: `--repo-org` and `--repo-name` flags provided
-3. Check RepoBinding CRD exists: `kubectl get crd repobindings.arbiter.io`
+3. Check RepoBinding CRD exists: `kubectl get crd repobindings.aphex`
 4. Verify Tekton is installed: `kubectl get crd pipelines.tekton.dev`
 5. Check platform-system namespace exists: `kubectl get namespace platform-system`
 
@@ -81,7 +81,7 @@ No automated alerting configured. Issues reported via:
 **Symptom**: Pipeline created but RepoBinding creation fails
 
 **Resolution**:
-1. Check RepoBinding CRD: `kubectl get crd repobindings.arbiter.io`
+1. Check RepoBinding CRD: `kubectl get crd repobindings.aphex`
 2. Verify platform-system namespace: `kubectl get namespace platform-system`
 3. Check existing RepoBinding: `kubectl get repobinding <pipeline-name>-binding -n platform-system`
 4. Validate GitHub org/repo names match repository structure

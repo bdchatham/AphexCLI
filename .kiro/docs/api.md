@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Aphex CLI provides a command-line interface for managing Tekton pipelines on the Arbiter platform. This document describes the CLI commands, options, integration patterns, and the logger API for developers.
+The Aphex CLI provides a command-line interface for managing Tekton pipelines on the Aphex platform. This document describes the CLI commands, options, integration patterns, and the logger API for developers.
 
 ## Global Flags
 
@@ -561,7 +561,7 @@ Organization bootstrap creates a complete multi-tenant setup:
 
 **Organization Specification:**
 ```yaml
-apiVersion: arbiter.io/v1alpha1
+apiVersion: aphex/v1alpha1
 kind: Organization
 metadata:
   name: {organization-name}
@@ -594,7 +594,7 @@ Pipeline creation automatically provisions webhook integration:
 
 **RepoBinding Specification:**
 ```yaml
-apiVersion: arbiter.io/v1alpha1
+apiVersion: aphex/v1alpha1
 kind: RepoBinding
 metadata:
   name: {pipeline-name}-binding
@@ -627,7 +627,7 @@ Knowledge bases track documentation repositories for the Archon RAG system. The 
 
 **KnowledgeBase Specification:**
 ```yaml
-apiVersion: arbiter.io/v1alpha1
+apiVersion: aphex/v1alpha1
 kind: KnowledgeBase
 metadata:
   name: {knowledge-base-name}

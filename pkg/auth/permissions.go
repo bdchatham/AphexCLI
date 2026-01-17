@@ -85,7 +85,7 @@ func CheckOrganizationBootstrap(ctx context.Context, client *k8s.Client) error {
 			ResourceAttributes: &authv1.ResourceAttributes{
 				Namespace: "platform-system",
 				Verb:      "create",
-				Group:     "arbiter.io",
+				Group:     "aphex",
 				Version:   "v1alpha1",
 				Resource:  "organizations",
 			},

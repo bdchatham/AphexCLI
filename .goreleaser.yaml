@@ -54,7 +54,7 @@ release:
   header: |
     ## Aphex CLI {{.Version}}
     
-    CLI tool for managing Tekton pipelines on the Arbiter platform.
+    CLI tool for managing Tekton pipelines on the Aphex platform.
   footer: |
     ## Installation
     
