@@ -561,7 +561,7 @@ Organization bootstrap creates a complete multi-tenant setup:
 
 **Organization Specification:**
 ```yaml
-apiVersion: aphex/v1alpha1
+apiVersion: aphex.io/v1alpha1
 kind: Organization
 metadata:
   name: {organization-name}
@@ -594,7 +594,7 @@ Pipeline creation automatically provisions webhook integration:
 
 **RepoBinding Specification:**
 ```yaml
-apiVersion: aphex/v1alpha1
+apiVersion: aphex.io/v1alpha1
 kind: RepoBinding
 metadata:
   name: {pipeline-name}-binding
@@ -627,7 +627,7 @@ Knowledge bases track documentation repositories for the Archon RAG system. The 
 
 **KnowledgeBase Specification:**
 ```yaml
-apiVersion: aphex/v1alpha1
+apiVersion: aphex.io/v1alpha1
 kind: KnowledgeBase
 metadata:
   name: {knowledge-base-name}
