@@ -63,7 +63,7 @@ func main() {
 			commands.AuthCommand(),
 			commands.OrganizationCommand(),
 			commands.PipelineCommand(),
-			commands.SecretsCommand(),
+			commands.SecretCommand(),
 			commands.KnowledgeBaseCommand(),
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {

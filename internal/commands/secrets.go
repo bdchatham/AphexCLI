@@ -10,10 +10,10 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func SecretsCommand() *cli.Command {
+func SecretCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "secrets",
-		Usage: "Organization secrets management",
+		Name:  "secret",
+		Usage: "Organization secret management",
 		Commands: []*cli.Command{
 			{
 				Name:      "set",
