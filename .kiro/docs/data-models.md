@@ -90,6 +90,61 @@ type DeleteOptions struct {
 
 **Note**: The `Verbose bool` field was removed. Logging is now controlled by global `--log-level` and `--verbose` flags.
 
+### Secret Operation Options
+
+#### SetOptions
+```go
+type SetOptions struct {
+    OrgName string            // Organization name
+    Secrets map[string]string // Key-value pairs to set
+}
+```
+
+#### ListOptions
+```go
+type ListOptions struct {
+    OrgName string  // Organization name
+}
+```
+
+#### DeleteOptions
+```go
+type DeleteOptions struct {
+    OrgName string   // Organization name
+    Keys    []string // Secret keys to delete
+}
+```
+
+### Knowledge Base Operation Options
+
+#### CreateOptions
+```go
+type CreateOptions struct {
+    Name      string  // Knowledge base name
+    Namespace string  // Target namespace (org-{name})
+    RepoURL   string  // GitHub repository URL
+    Branch    string  // Git branch to monitor
+    DocsPath  string  // Path to documentation within repo
+}
+```
+
+#### ListOptions
+```go
+type ListOptions struct {
+    OutputFormat output.Format  // Output format (table, json, yaml)
+    Quiet        bool           // Suppress non-essential output
+}
+```
+
+#### DeleteOptions
+```go
+type DeleteOptions struct {
+    Name      string  // Knowledge base name
+    Namespace string  // Target namespace
+    Force     bool    // Skip confirmation prompt
+}
+```
+
 ## Output Models
 
 ### PipelineInfo
@@ -167,6 +222,8 @@ type Client interface {
 - `pkg/auth/login.go` - Authentication models
 - `pkg/pipeline/` - Pipeline operation models
 - `pkg/organization/` - Organization operation models
+- `pkg/secrets/secrets.go` - Secret operation models
+- `pkg/knowledgebase/knowledgebase.go` - Knowledge base operation models
 - `pkg/output/formatter.go` - Output models
 - `pkg/auth/permissions.go` - Error models
 - `pkg/k8s/aphex_client.go` - Typed client setup and scheme registration
