@@ -24,11 +24,21 @@ Documentation in this repository follows the Archon documentation contract defin
 # Authenticate with the platform
 aphex auth login
 
+# Bootstrap a new organization
+aphex organization bootstrap my-org --admin-email admin@example.com
+
 # List pipelines in current namespace
 aphex pipeline list
 
 # Create a pipeline
-aphex pipeline create my-pipeline --file pipeline.yaml
+aphex pipeline create my-pipeline --file pipeline.yaml \
+  --aphex-org my-org --repo-org github-org --repo-name my-repo
+
+# Set secrets for an organization
+aphex secret set --org my-org github-token=ghp_xxx
+
+# Create a knowledge base
+aphex knowledgebase create my-kb --org my-org
 
 # Delete a pipeline
 aphex pipeline delete my-pipeline
@@ -36,8 +46,12 @@ aphex pipeline delete my-pipeline
 
 ## Key Concepts
 
-- **Pipeline**: Tekton Pipeline resource defining a workflow
-- **Namespace**: Kubernetes namespace for tenant isolation
+- **Organization**: Multi-tenant isolation boundary with dedicated namespace and webhook infrastructure
+- **Pipeline**: Tekton Pipeline resource defining a workflow, managed via RepoBinding CRD
+- **RepoBinding**: Platform CRD that connects GitHub repositories to pipelines
+- **Secret**: Organization-scoped secrets for GitHub tokens, credentials, etc.
+- **Knowledge Base**: RAG knowledge base instance for document ingestion and retrieval
+- **Namespace**: Kubernetes namespace for tenant isolation (auto-managed by controller)
 - **OIDC Authentication**: Browser-based authentication via Dex
 - **Interactive Mode**: Automatic prompting when arguments are missing
 

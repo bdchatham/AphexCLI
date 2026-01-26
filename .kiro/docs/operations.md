@@ -2,6 +2,44 @@
 
 ## Deployment
 
+### Installation for End Users
+
+**Recommended: Homebrew (macOS)**
+
+```bash
+# Add the tap
+brew tap bdchatham/aphex
+
+# Install aphex (automatically installs kubelogin dependency)
+brew install aphex
+
+# Verify installation
+aphex --version
+```
+
+**Manual Installation (Linux or without Homebrew)**
+
+Download the latest release from GitHub:
+
+```bash
+# Linux (x86_64)
+curl -L https://github.com/bdchatham/AphexCLI/releases/latest/download/aphex-linux-amd64 -o aphex
+chmod +x aphex
+sudo mv aphex /usr/local/bin/
+
+# Verify installation
+aphex --version
+```
+
+**Prerequisites for Manual Installation:**
+- `kubelogin` must be installed for OIDC authentication:
+  ```bash
+  # macOS
+  brew install Azure/kubelogin/kubelogin
+  
+  # Linux - download from https://github.com/Azure/kubelogin/releases
+  ```
+
 ### Building the CLI
 ```bash
 # Build for current platform

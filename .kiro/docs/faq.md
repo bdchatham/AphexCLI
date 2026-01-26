@@ -46,6 +46,31 @@ Check the error message for required group membership and contact your platform 
 3. Verify Tekton is installed: `kubectl get crd pipelines.tekton.dev`
 4. Use `--log-level=debug` or `--verbose` flag for detailed output
 
+### How do I manage secrets for my organization?
+Use the `secret` command to set, list, and delete organization-scoped secrets:
+
+```bash
+# Set a secret
+aphex secret set --org my-org github-token=ghp_xxx
+
+# List secrets (values are redacted)
+aphex secret list --org my-org
+
+# Delete a secret
+aphex secret delete --org my-org github-token
+```
+
+Secrets are stored in Kubernetes Secrets in the organization namespace and are accessible to pipelines within that organization.
+
+### How do I create a knowledge base?
+Use the `knowledgebase create` command to provision a RAG knowledge base:
+
+```bash
+aphex knowledgebase create my-kb --org my-org
+```
+
+This creates a KnowledgeBase CRD that the platform controller reconciles into a full knowledge base deployment with vector storage, embedding service, and query API.
+
 ## Archon-Specific Questions
 
 ### How is this repository ingested by Archon?
