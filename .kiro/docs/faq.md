@@ -71,6 +71,60 @@ aphex knowledgebase create my-kb --org my-org
 
 This creates a KnowledgeBase CRD that the platform controller reconciles into a full knowledge base deployment with vector storage, embedding service, and query API.
 
+### How do I create an agent?
+Use the `agent create` command to provision a model server with optional RAG capabilities:
+
+```bash
+# Simple model server
+aphex agent create llama-70b \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --gpu-count 4
+
+# With RAG capabilities
+aphex agent create llama-rag \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --kb-name my-kb \
+  --orchestration
+```
+
+This creates an Agent CRD that the platform controller reconciles into:
+- Model server deployment (vLLM)
+- Optional orchestrator for unified RAG endpoint
+- Services for accessing the model and orchestrator
+
+### What are the Agent deployment patterns?
+The Agent CRD supports three patterns:
+
+1. **Model only**: Direct model inference, no RAG
+   ```bash
+   aphex agent create my-agent --model meta-llama/Llama-3.1-70B-Instruct
+   ```
+
+2. **Model + KB**: Manual RAG orchestration by user
+   ```bash
+   aphex agent create my-agent --model meta-llama/Llama-3.1-70B-Instruct --kb-name my-kb
+   ```
+
+3. **Model + KB + Orchestration**: Unified `/v1/chat` endpoint with automatic RAG
+   ```bash
+   aphex agent create my-agent --model meta-llama/Llama-3.1-70B-Instruct --kb-name my-kb --orchestration
+   ```
+
+### How do I use file input for complex Agent configurations?
+Use the AWS CLI-style file input pattern:
+
+```bash
+# Generate template
+aphex agent generate-spec > agent.yaml
+
+# Edit agent.yaml with your configuration
+
+# Create from file
+aphex agent create --cli-input-yaml agent.yaml
+```
+
+This is useful for complex configurations with custom images, ports, or multiple settings.
+
 ## Archon-Specific Questions
 
 ### How is this repository ingested by Archon?

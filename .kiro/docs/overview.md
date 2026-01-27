@@ -40,6 +40,17 @@ aphex secret set --org my-org github-token=ghp_xxx
 # Create a knowledge base
 aphex knowledgebase create my-kb --org my-org
 
+# Create an agent (model server)
+aphex agent create llama-70b \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --gpu-count 4
+
+# Create an agent with RAG capabilities
+aphex agent create llama-rag \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --kb-name my-kb \
+  --orchestration
+
 # Delete a pipeline
 aphex pipeline delete my-pipeline
 ```
@@ -51,6 +62,7 @@ aphex pipeline delete my-pipeline
 - **RepoBinding**: Platform CRD that connects GitHub repositories to pipelines
 - **Secret**: Organization-scoped secrets for GitHub tokens, credentials, etc.
 - **Knowledge Base**: RAG knowledge base instance for document ingestion and retrieval
+- **Agent**: Model server (vLLM) with optional KnowledgeBase integration and orchestration
 - **Namespace**: Kubernetes namespace for tenant isolation (auto-managed by controller)
 - **OIDC Authentication**: Browser-based authentication via Dex
 - **Interactive Mode**: Automatic prompting when arguments are missing

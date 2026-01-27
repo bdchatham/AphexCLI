@@ -278,6 +278,138 @@ Global Options:
 - Deletes KnowledgeBase CRD from specified namespace
 - Confirmation can be skipped with --force flag
 
+### Agent Commands
+
+#### `aphex agent create`
+Create a new Agent resource for model server deployment with optional RAG capabilities.
+
+```bash
+aphex agent create <name> [options]
+
+Options:
+  --namespace string            Namespace for the agent [default: default]
+  --cli-input-json string       Path to JSON file with complete agent specification
+  --cli-input-yaml string       Path to YAML file with complete agent specification
+  --model string                Model name (e.g., meta-llama/Llama-3.1-70B-Instruct)
+  --provider string             Model provider (vllm, openai, anthropic, bedrock) [default: vllm]
+  --gpu-count int               Number of GPUs to allocate
+  --quantization string         Quantization method (awq, gptq)
+  --kb-name string              KnowledgeBase name to reference
+  --kb-namespace string         KnowledgeBase namespace (defaults to agent namespace)
+  --orchestration               Enable orchestrator for unified RAG endpoint
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
+```
+
+**Behavior:**
+- Creates Agent CRD in specified namespace
+- Supports two input modes: flags or file input (AWS CLI pattern)
+- File input (--cli-input-json/yaml) loads complete specification
+- Flag-based input for simple cases (--model required)
+- Platform controller provisions model server and optional orchestrator
+
+**File Input Pattern (AWS CLI style):**
+```bash
+# Generate template
+aphex agent generate-spec > agent.yaml
+
+# Edit agent.yaml with your configuration
+
+# Create from file
+aphex agent create --cli-input-yaml agent.yaml
+```
+
+**Flag-Based Examples:**
+```bash
+# Minimal: Model only
+aphex agent create llama-70b \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --gpu-count 4
+
+# Model + KB reference (manual RAG)
+aphex agent create llama-rag \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --kb-name platform-docs \
+  --kb-namespace archon-knowledge-base
+
+# Full: Model + KB + Orchestration (automatic RAG)
+aphex agent create llama-unified \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --kb-name platform-docs \
+  --orchestration
+```
+
+**Deployment Patterns:**
+1. **Model only**: Direct model inference, no RAG
+2. **Model + KB**: Manual RAG orchestration by user
+3. **Model + KB + Orchestration**: Unified `/v1/chat` endpoint with automatic RAG
+
+#### `aphex agent list`
+List all Agent resources across all namespaces.
+
+```bash
+aphex agent list [options]
+
+Options:
+  --output, -o string     Output format (table, json, yaml)
+  --quiet                 Suppress non-essential output
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
+```
+
+**Behavior:**
+- Lists agents from all accessible namespaces
+- Displays name, namespace, model, phase, and orchestrator status
+- Supports table, JSON, and YAML output formats
+
+#### `aphex agent delete`
+Delete an Agent resource.
+
+```bash
+aphex agent delete <name> [options]
+
+Options:
+  --namespace string      Namespace of the agent [default: default]
+  --force                 Skip confirmation prompt
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+  --kubeconfig string      Path to kubeconfig file
+```
+
+**Behavior:**
+- Shows confirmation prompt before deletion
+- Deletes Agent CRD from specified namespace
+- Controller automatically cleans up model server and orchestrator
+- Confirmation can be skipped with --force flag
+
+#### `aphex agent generate-spec`
+Generate an Agent specification template.
+
+```bash
+aphex agent generate-spec [options]
+
+Options:
+  --output, -o string     Output format (json, yaml) [default: yaml]
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+```
+
+**Behavior:**
+- Generates complete Agent specification template
+- Includes all fields with example values
+- Output can be saved to file and edited
+- Use with --cli-input-json/yaml for file-based creation
+
 ## Authentication
 
 Uses OIDC authentication via kubelogin exec plugin:

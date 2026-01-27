@@ -224,6 +224,8 @@ type Client interface {
 - `pkg/organization/` - Organization operation models
 - `pkg/secrets/secrets.go` - Secret operation models
 - `pkg/knowledgebase/knowledgebase.go` - Knowledge base operation models
+- `pkg/agent/agent.go` - Agent operation models
+- `pkg/agent/formatter.go` - Agent output formatting
 - `pkg/output/formatter.go` - Output models
 - `pkg/auth/permissions.go` - Error models
 - `pkg/k8s/aphex_client.go` - Typed client setup and scheme registration
