@@ -48,8 +48,16 @@ func KnowledgeBaseCommand() *cli.Command {
 						Value: "default",
 					},
 					&cli.StringFlag{
+						Name:  "cli-input-json",
+						Usage: "Path to JSON file with complete knowledge base specification",
+					},
+					&cli.StringFlag{
+						Name:  "cli-input-yaml",
+						Usage: "Path to YAML file with complete knowledge base specification",
+					},
+					&cli.StringFlag{
 						Name:  "repo-url",
-						Usage: "Repository URL (supports GitHub, GitLab, Bitbucket, etc.)",
+						Usage: "Repository URL (any Git provider)",
 					},
 					&cli.StringFlag{
 						Name:  "branch",
@@ -58,20 +66,20 @@ func KnowledgeBaseCommand() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "docs-path",
-						Usage: "Documentation path within repository (supports globs)",
+						Usage: "Documentation path within repository",
 						Value: ".kiro/docs",
 					},
 					&cli.StringFlag{
 						Name:  "mcp-image",
-						Usage: "Enable MCP server with custom image (default: ghcr.io/bdchatham/archon-mcp-server:latest)",
+						Usage: "MCP server container image (required for MCP)",
 					},
 					&cli.IntFlag{
 						Name:  "mcp-port",
-						Usage: "MCP server port (default: 8090)",
+						Usage: "MCP server port (required for MCP)",
 					},
-					&cli.StringFlag{
-						Name:  "mcp-query-url",
-						Usage: "Query service URL for MCP server (default: http://query.{namespace}:8080)",
+					&cli.IntFlag{
+						Name:  "mcp-replicas",
+						Usage: "MCP server replicas",
 					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
@@ -100,6 +108,19 @@ func KnowledgeBaseCommand() *cli.Command {
 					},
 				},
 				Action: knowledgeBaseDeleteAction,
+			},
+			{
+				Name:  "generate-spec",
+				Usage: "Generate knowledge base specification template",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Usage:   "Output format (json, yaml)",
+						Value:   "yaml",
+					},
+				},
+				Action: knowledgeBaseGenerateSpecAction,
 			},
 		},
 	}
@@ -134,19 +155,21 @@ func knowledgeBaseCreateAction(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	args := cmd.Args()
-	if args.Len() == 0 {
-		return fmt.Errorf("knowledge base name is required as argument")
+	if args.Len() == 0 && cmd.String("cli-input-json") == "" && cmd.String("cli-input-yaml") == "" {
+		return fmt.Errorf("knowledge base name is required as argument (or use --cli-input-json/--cli-input-yaml)")
 	}
 
 	opts := knowledgebase.CreateOptions{
-		Name:        args.First(),
-		Namespace:   cmd.String("namespace"),
-		RepoURL:     cmd.String("repo-url"),
-		Branch:      cmd.String("branch"),
-		DocsPath:    cmd.String("docs-path"),
-		MCPImage:    cmd.String("mcp-image"),
-		MCPPort:     int32(cmd.Int("mcp-port")),
-		MCPQueryURL: cmd.String("mcp-query-url"),
+		Name:          args.First(),
+		Namespace:     cmd.String("namespace"),
+		InputJSONFile: cmd.String("cli-input-json"),
+		InputYAMLFile: cmd.String("cli-input-yaml"),
+		RepoURL:       cmd.String("repo-url"),
+		Branch:        cmd.String("branch"),
+		DocsPath:      cmd.String("docs-path"),
+		MCPImage:      cmd.String("mcp-image"),
+		MCPPort:       int32(cmd.Int("mcp-port")),
+		MCPReplicas:   int32(cmd.Int("mcp-replicas")),
 	}
 
 	log.Debugf("Creating knowledge base: %s", opts.Name)
@@ -175,4 +198,9 @@ func knowledgeBaseDeleteAction(ctx context.Context, cmd *cli.Command) error {
 
 	log.Debugf("Deleting knowledge base: %s", opts.Name)
 	return knowledgebase.Delete(ctx, client, opts)
+}
+
+func knowledgeBaseGenerateSpecAction(ctx context.Context, cmd *cli.Command) error {
+	outputFormat := output.Format(cmd.String("output"))
+	return knowledgebase.GenerateSpec(ctx, outputFormat)
 }
