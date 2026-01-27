@@ -65,6 +65,7 @@ func main() {
 			commands.PipelineCommand(),
 			commands.SecretCommand(),
 			commands.KnowledgeBaseCommand(),
+			commands.AgentCommand(),
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			// Default action when no subcommands are provided
