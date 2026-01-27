@@ -55,11 +55,14 @@ func List(ctx context.Context, k8sClient *k8s.Client, opts ListOptions) error {
 
 
 type CreateOptions struct {
-	Name      string
-	Namespace string
-	RepoURL   string
-	Branch    string
-	DocsPath  string
+	Name        string
+	Namespace   string
+	RepoURL     string
+	Branch      string
+	DocsPath    string
+	MCPImage    string
+	MCPPort     int32
+	MCPQueryURL string
 }
 
 func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) error {
@@ -95,6 +98,21 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 		},
 	}
 
+	// Add MCP server config if any MCP flags are set
+	if opts.MCPImage != "" || opts.MCPPort != 0 || opts.MCPQueryURL != "" {
+		kb.Spec.MCPServer = &platformv1alpha1.MCPServerSpec{}
+		
+		if opts.MCPImage != "" {
+			kb.Spec.MCPServer.Image = opts.MCPImage
+		}
+		if opts.MCPPort != 0 {
+			kb.Spec.MCPServer.Port = opts.MCPPort
+		}
+		if opts.MCPQueryURL != "" {
+			kb.Spec.MCPServer.QueryServiceURL = opts.MCPQueryURL
+		}
+	}
+
 	log.Debugf("Creating KnowledgeBase %q in namespace %q", opts.Name, opts.Namespace)
 
 	if err := aphexClient.Create(ctx, kb); err != nil {
@@ -104,6 +122,16 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 	fmt.Printf("Knowledge base %q created successfully in namespace %q\n", opts.Name, opts.Namespace)
 	fmt.Printf("Repository: %s (branch: %s)\n", opts.RepoURL, opts.Branch)
 	fmt.Printf("Documentation path: %s\n", opts.DocsPath)
+	
+	if kb.Spec.MCPServer != nil {
+		fmt.Println("MCP server: enabled")
+		if opts.MCPImage != "" {
+			fmt.Printf("  Image: %s\n", opts.MCPImage)
+		}
+		if opts.MCPPort != 0 {
+			fmt.Printf("  Port: %d\n", opts.MCPPort)
+		}
+	}
 
 	return nil
 }
@@ -121,12 +149,8 @@ func validateCreateOptions(opts CreateOptions) error {
 		return fmt.Errorf("repository URL is required")
 	}
 
-	if !strings.HasPrefix(opts.RepoURL, "https://github.com/") {
-		return fmt.Errorf("repository URL must start with https://github.com/")
-	}
-
-	if !strings.HasPrefix(opts.DocsPath, ".kiro/docs") {
-		return fmt.Errorf("documentation path must start with .kiro/docs")
+	if !strings.HasPrefix(opts.RepoURL, "http://") && !strings.HasPrefix(opts.RepoURL, "https://") {
+		return fmt.Errorf("repository URL must start with http:// or https://")
 	}
 
 	return nil

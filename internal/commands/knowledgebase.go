@@ -49,7 +49,7 @@ func KnowledgeBaseCommand() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "repo-url",
-						Usage: "Repository URL (https://github.com/org/repo)",
+						Usage: "Repository URL (supports GitHub, GitLab, Bitbucket, etc.)",
 					},
 					&cli.StringFlag{
 						Name:  "branch",
@@ -58,8 +58,20 @@ func KnowledgeBaseCommand() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "docs-path",
-						Usage: "Documentation path within repository",
+						Usage: "Documentation path within repository (supports globs)",
 						Value: ".kiro/docs",
+					},
+					&cli.StringFlag{
+						Name:  "mcp-image",
+						Usage: "Enable MCP server with custom image (default: ghcr.io/bdchatham/archon-mcp-server:latest)",
+					},
+					&cli.IntFlag{
+						Name:  "mcp-port",
+						Usage: "MCP server port (default: 8090)",
+					},
+					&cli.StringFlag{
+						Name:  "mcp-query-url",
+						Usage: "Query service URL for MCP server (default: http://query.{namespace}:8080)",
 					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
@@ -127,11 +139,14 @@ func knowledgeBaseCreateAction(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	opts := knowledgebase.CreateOptions{
-		Name:      args.First(),
-		Namespace: cmd.String("namespace"),
-		RepoURL:   cmd.String("repo-url"),
-		Branch:    cmd.String("branch"),
-		DocsPath:  cmd.String("docs-path"),
+		Name:        args.First(),
+		Namespace:   cmd.String("namespace"),
+		RepoURL:     cmd.String("repo-url"),
+		Branch:      cmd.String("branch"),
+		DocsPath:    cmd.String("docs-path"),
+		MCPImage:    cmd.String("mcp-image"),
+		MCPPort:     int32(cmd.Int("mcp-port")),
+		MCPQueryURL: cmd.String("mcp-query-url"),
 	}
 
 	log.Debugf("Creating knowledge base: %s", opts.Name)
