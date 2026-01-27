@@ -38,7 +38,14 @@ aphex pipeline create my-pipeline --file pipeline.yaml \
 aphex secret set --org my-org github-token=ghp_xxx
 
 # Create a knowledge base
-aphex knowledgebase create my-kb --org my-org
+aphex knowledgebase create my-kb \
+  --repo-url https://github.com/org/repo
+
+# Create a knowledge base with MCP server
+aphex knowledgebase create my-kb \
+  --repo-url https://github.com/org/repo \
+  --mcp-image ghcr.io/bdchatham/archon-mcp-server:latest \
+  --mcp-port 8090
 
 # Create an agent (model server)
 aphex agent create llama-70b \

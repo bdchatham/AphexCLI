@@ -66,10 +66,41 @@ Secrets are stored in Kubernetes Secrets in the organization namespace and are a
 Use the `knowledgebase create` command to provision a RAG knowledge base:
 
 ```bash
-aphex knowledgebase create my-kb --org my-org
+# Simple single-repo
+aphex knowledgebase create my-kb \
+  --repo-url https://github.com/org/repo
+
+# With MCP server (explicit config required)
+aphex knowledgebase create my-kb \
+  --repo-url https://github.com/org/repo \
+  --mcp-image ghcr.io/bdchatham/archon-mcp-server:latest \
+  --mcp-port 8090
 ```
 
 This creates a KnowledgeBase CRD that the platform controller reconciles into a full knowledge base deployment with vector storage, embedding service, and query API.
+
+### How do I create a knowledge base with multiple repositories?
+Use the file input pattern for complex configurations:
+
+```bash
+# Generate template
+aphex knowledgebase generate-spec > kb.yaml
+
+# Edit kb.yaml to add multiple repositories
+# Example:
+#   repositories:
+#   - url: https://github.com/org/repo1
+#     branch: main
+#     paths: [".kiro/docs"]
+#   - url: https://github.com/org/repo2
+#     branch: mainline
+#     paths: ["docs/**/*.md"]
+
+# Create from file
+aphex knowledgebase create --cli-input-yaml kb.yaml
+```
+
+The CRD supports multiple repositories, but the CLI flags only support single-repo for simplicity. Use file input for multi-repo configurations.
 
 ### How do I create an agent?
 Use the `agent create` command to provision a model server with optional RAG capabilities:

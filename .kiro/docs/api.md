@@ -211,10 +211,15 @@ Create a new KnowledgeBase resource for tracking documentation repositories.
 aphex knowledgebase create <name> [options]
 
 Options:
-  --namespace string      Namespace for the knowledge base [default: default]
-  --repo-url string       Repository URL (https://github.com/org/repo)
-  --branch string         Git branch to track [default: main]
-  --docs-path string      Documentation path within repository [default: .kiro/docs]
+  --namespace string        Namespace for the knowledge base [default: default]
+  --cli-input-json string   Path to JSON file with complete knowledge base specification
+  --cli-input-yaml string   Path to YAML file with complete knowledge base specification
+  --repo-url string         Repository URL (any Git provider)
+  --branch string           Git branch to track [default: main]
+  --docs-path string        Documentation path within repository [default: .kiro/docs]
+  --mcp-image string        MCP server container image (required for MCP)
+  --mcp-port int            MCP server port (required for MCP)
+  --mcp-replicas int        MCP server replicas
 
 Global Options:
   --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
@@ -224,16 +229,40 @@ Global Options:
 
 **Behavior:**
 - Creates KnowledgeBase CRD in specified namespace
-- Validates repository URL starts with https://github.com/
-- Validates documentation path starts with .kiro/docs
-- Supports interactive mode when --repo-url is not provided
-- Platform controller reconciles and validates the resource
+- Supports two input modes: flags or file input (AWS CLI pattern)
+- File input (--cli-input-json/yaml) loads complete specification
+- Flag-based input for simple single-repo cases (--repo-url required)
+- MCP requires both --mcp-image and --mcp-port (no defaults)
+- Platform controller reconciles and provisions resources
 
-**Interactive Mode:**
-When --repo-url is not provided, prompts for:
-- Repository URL
-- Git branch (default: main)
-- Documentation path (default: .kiro/docs)
+**File Input Pattern (AWS CLI style):**
+```bash
+# Generate template
+aphex knowledgebase generate-spec > kb.yaml
+
+# Edit kb.yaml with your configuration
+
+# Create from file
+aphex knowledgebase create --cli-input-yaml kb.yaml
+```
+
+**Flag-Based Examples:**
+```bash
+# Simple single-repo
+aphex knowledgebase create my-kb \
+  --repo-url https://github.com/org/repo
+
+# With MCP (explicit config required)
+aphex knowledgebase create my-kb \
+  --repo-url https://github.com/org/repo \
+  --mcp-image ghcr.io/bdchatham/archon-mcp-server:latest \
+  --mcp-port 8090
+
+# Multiple paths (use file input)
+aphex knowledgebase generate-spec > kb.yaml
+# Edit to add multiple repos/paths
+aphex knowledgebase create --cli-input-yaml kb.yaml
+```
 
 #### `aphex knowledgebase list`
 List all KnowledgeBase resources across all namespaces.
@@ -277,6 +306,26 @@ Global Options:
 - Shows confirmation prompt with tracked repositories
 - Deletes KnowledgeBase CRD from specified namespace
 - Confirmation can be skipped with --force flag
+
+#### `aphex knowledgebase generate-spec`
+Generate a KnowledgeBase specification template.
+
+```bash
+aphex knowledgebase generate-spec [options]
+
+Options:
+  --output, -o string     Output format (json, yaml) [default: yaml]
+
+Global Options:
+  --log-level, -l string   Set log level (debug, info, warn, error) [default: info]
+  --verbose, -v            Enable verbose output (equivalent to --log-level=debug)
+```
+
+**Behavior:**
+- Generates complete KnowledgeBase specification template
+- Includes example repository and MCP configuration
+- Output can be saved to file and edited
+- Use with --cli-input-json/yaml for file-based creation
 
 ### Agent Commands
 
