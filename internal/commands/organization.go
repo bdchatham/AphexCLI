@@ -11,11 +11,10 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// OrganizationCommand returns the organization command with subcommands
 func OrganizationCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "organization",
-		Usage: "Organization management",
+		Name:   "organization",
+		Usage:  "Organization management",
 		Before: organizationBeforeAction,
 		Commands: []*cli.Command{
 			{
@@ -23,9 +22,9 @@ func OrganizationCommand() *cli.Command {
 				Usage:     "Bootstrap a new organization",
 				ArgsUsage: "[organization-name]",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
+					&cli.StringSliceFlag{
 						Name:     "admin-email",
-						Usage:    "Admin email address for the organization",
+						Usage:    "Admin email address(es) for the organization (repeatable)",
 						Required: true,
 					},
 					&cli.StringFlag{
@@ -50,8 +49,26 @@ func OrganizationCommand() *cli.Command {
 				Action: organizationBootstrapAction,
 			},
 			{
-				Name:      "list",
-				Usage:     "List organizations",
+				Name:      "get",
+				Usage:     "Get details of a specific organization",
+				ArgsUsage: "[organization-name]",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "kubeconfig",
+						Usage: "Path to kubeconfig file",
+					},
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Usage:   "Output format (table, json, yaml)",
+						Value:   "table",
+					},
+				},
+				Action: organizationGetAction,
+			},
+			{
+				Name:  "list",
+				Usage: "List organizations",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "kubeconfig",
@@ -91,66 +108,78 @@ func OrganizationCommand() *cli.Command {
 }
 
 func organizationBeforeAction(ctx context.Context, cmd *cli.Command) error {
-	// Skip preflight checks for read-only operations
 	subcommand := cmd.Args().First()
-	if subcommand == "list" {
+	if subcommand == "list" || subcommand == "get" {
 		return nil
 	}
 
-	// Only check permissions for bootstrap operations
 	if subcommand != "bootstrap" {
 		return nil
 	}
 
-	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// Perform preflight authorization check for organization management
 	return auth.CheckOrganizationBootstrap(ctx, client)
 }
 
 func organizationBootstrapAction(ctx context.Context, cmd *cli.Command) error {
 	log := logger.GetLogger(ctx)
-	
-	// Create Kubernetes client
+
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// Get organization name from arguments
 	args := cmd.Args()
 	if args.Len() == 0 {
 		return fmt.Errorf("organization name is required as argument")
 	}
 
-	// Create organization
 	opts := organization.BootstrapOptions{
 		Name:          args.First(),
 		DisplayName:   cmd.String("display-name"),
-		AdminEmail:    cmd.String("admin-email"),
+		AdminEmails:   cmd.StringSlice("admin-email"),
 		WebhookSecret: cmd.String("webhook-secret"),
+		OutputFormat:  cmd.String("output"),
 	}
 
 	log.Debugf("Bootstrapping organization with options: %+v", opts)
 	return organization.Bootstrap(ctx, client, opts)
 }
 
-func organizationListAction(ctx context.Context, cmd *cli.Command) error {
-	log := logger.GetLogger(ctx)
-	
-	// Create Kubernetes client
+func organizationGetAction(ctx context.Context, cmd *cli.Command) error {
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// List organizations
+	args := cmd.Args()
+	if args.Len() == 0 {
+		return fmt.Errorf("organization name is required as argument")
+	}
+
+	opts := organization.GetOptions{
+		Name:         args.First(),
+		OutputFormat: cmd.String("output"),
+	}
+
+	return organization.Get(ctx, client, opts)
+}
+
+func organizationListAction(ctx context.Context, cmd *cli.Command) error {
+	log := logger.GetLogger(ctx)
+
+	client, err := k8s.NewClient(cmd.String("kubeconfig"))
+	if err != nil {
+		return fmt.Errorf("failed to create Kubernetes client: %w", err)
+	}
+
 	opts := organization.ListOptions{
-		Quiet: cmd.Bool("quiet"),
+		Quiet:        cmd.Bool("quiet"),
+		OutputFormat: cmd.String("output"),
 	}
 
 	log.Debug("Listing organizations")
@@ -159,20 +188,17 @@ func organizationListAction(ctx context.Context, cmd *cli.Command) error {
 
 func organizationDeleteAction(ctx context.Context, cmd *cli.Command) error {
 	log := logger.GetLogger(ctx)
-	
-	// Create Kubernetes client
+
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// Get organization name from arguments
 	args := cmd.Args()
 	if args.Len() == 0 {
 		return fmt.Errorf("organization name is required as argument")
 	}
 
-	// Delete organization
 	opts := organization.DeleteOptions{
 		Name:  args.First(),
 		Force: cmd.Bool("force"),

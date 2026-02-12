@@ -16,6 +16,26 @@ func SecretCommand() *cli.Command {
 		Usage: "Organization secret management",
 		Commands: []*cli.Command{
 			{
+				Name:  "init",
+				Usage: "Initialize required secrets for an organization (auto-generates DB credentials, prompts for GitHub token)",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "org",
+						Usage:    "Organization name",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "github-token",
+						Usage: "GitHub personal access token (prompted if not provided)",
+					},
+					&cli.StringFlag{
+						Name:  "kubeconfig",
+						Usage: "Path to kubeconfig file",
+					},
+				},
+				Action: secretsInitAction,
+			},
+			{
 				Name:      "set",
 				Usage:     "Set organization secrets (key=value pairs)",
 				ArgsUsage: "key=value [key=value ...]",
@@ -67,6 +87,32 @@ func SecretCommand() *cli.Command {
 			},
 		},
 	}
+}
+
+func secretsInitAction(ctx context.Context, cmd *cli.Command) error {
+	log := logger.GetLogger(ctx)
+
+	client, err := k8s.NewClient(cmd.String("kubeconfig"))
+	if err != nil {
+		return fmt.Errorf("failed to create Kubernetes client: %w", err)
+	}
+
+	orgName := cmd.String("org")
+	githubToken := cmd.String("github-token")
+
+	if githubToken == "" {
+		fmt.Print("GitHub personal access token: ")
+		fmt.Scanln(&githubToken)
+		if githubToken == "" {
+			return fmt.Errorf("github token is required")
+		}
+	}
+
+	log.Debugf("Initializing secrets for organization %q", orgName)
+	return secrets.Init(ctx, client, secrets.InitOptions{
+		OrgName:     orgName,
+		GitHubToken: githubToken,
+	})
 }
 
 func secretsSetAction(ctx context.Context, cmd *cli.Command) error {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	platformv1alpha1 "github.com/bdchatham/AphexPlatformInfrastructure/platform/platform-controller/controller/api/v1alpha1"
+	platformv1alpha1 "github.com/bdchatham/AphexControllerRuntime/api/v1alpha1"
 	"gopkg.in/yaml.v2"
 )
 

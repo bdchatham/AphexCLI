@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/bdchatham/AphexPlatformInfrastructure/platform/platform-controller/controller v0.0.0-20260120195658-d4ea5daa8afc
+	github.com/bdchatham/AphexControllerRuntime v0.2.0
 	github.com/tektoncd/pipeline v1.7.0
 	github.com/urfave/cli/v3 v3.0.0-alpha9
 	gopkg.in/yaml.v2 v2.4.0
@@ -93,5 +93,3 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
-
-replace github.com/bdchatham/AphexPlatformInfrastructure/platform/platform-controller/controller => ../AphexControllerRuntime

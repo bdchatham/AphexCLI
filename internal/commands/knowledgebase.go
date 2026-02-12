@@ -17,6 +17,24 @@ func KnowledgeBaseCommand() *cli.Command {
 		Usage: "Knowledge base management",
 		Commands: []*cli.Command{
 			{
+				Name:      "get",
+				Usage:     "Get a knowledge base",
+				ArgsUsage: "[name]",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Usage:   "Output format (table, json, yaml)",
+						Value:   "table",
+					},
+					&cli.StringFlag{
+						Name:  "kubeconfig",
+						Usage: "Path to kubeconfig file",
+					},
+				},
+				Action: knowledgeBaseGetAction,
+			},
+			{
 				Name:  "list",
 				Usage: "List knowledge bases",
 				Flags: []cli.Flag{
@@ -45,7 +63,11 @@ func KnowledgeBaseCommand() *cli.Command {
 					&cli.StringFlag{
 						Name:  "namespace",
 						Usage: "Namespace for the knowledge base",
-						Value: "default",
+					},
+					&cli.StringFlag{
+						Name:     "organization",
+						Usage:    "Organization name (must reference an existing Organization resource)",
+						Required: true,
 					},
 					&cli.StringFlag{
 						Name:  "cli-input-json",
@@ -62,11 +84,16 @@ func KnowledgeBaseCommand() *cli.Command {
 					&cli.StringFlag{
 						Name:  "branch",
 						Usage: "Git branch to track",
-						Value: "main",
+						Value: "mainline",
+					},
+					&cli.StringFlag{
+						Name:  "source-type",
+						Usage: "Source type (docs, code)",
+						Value: "docs",
 					},
 					&cli.StringFlag{
 						Name:  "docs-path",
-						Usage: "Documentation path within repository",
+						Usage: "Path within repository to process",
 						Value: ".kiro/docs",
 					},
 					&cli.StringFlag{
@@ -96,7 +123,6 @@ func KnowledgeBaseCommand() *cli.Command {
 					&cli.StringFlag{
 						Name:  "namespace",
 						Usage: "Namespace of the knowledge base",
-						Value: "default",
 					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
@@ -126,6 +152,23 @@ func KnowledgeBaseCommand() *cli.Command {
 	}
 }
 
+func knowledgeBaseGetAction(ctx context.Context, cmd *cli.Command) error {
+	client, err := k8s.NewClient(cmd.String("kubeconfig"))
+	if err != nil {
+		return fmt.Errorf("failed to create Kubernetes client: %w", err)
+	}
+
+	args := cmd.Args()
+	if args.Len() == 0 {
+		return fmt.Errorf("knowledge base name is required as argument")
+	}
+
+	return knowledgebase.Get(ctx, client, knowledgebase.GetOptions{
+		Name:         args.First(),
+		OutputFormat: output.Format(cmd.String("output")),
+	})
+}
+
 func knowledgeBaseListAction(ctx context.Context, cmd *cli.Command) error {
 	log := logger.GetLogger(ctx)
 
@@ -134,17 +177,14 @@ func knowledgeBaseListAction(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	outputFormat := output.Format(cmd.String("output"))
-
 	opts := knowledgebase.ListOptions{
-		OutputFormat: outputFormat,
+		OutputFormat: output.Format(cmd.String("output")),
 		Quiet:        cmd.Bool("quiet"),
 	}
 
 	log.Debug("Listing knowledge bases")
 	return knowledgebase.List(ctx, client, opts)
 }
-
 
 func knowledgeBaseCreateAction(ctx context.Context, cmd *cli.Command) error {
 	log := logger.GetLogger(ctx)
@@ -162,10 +202,12 @@ func knowledgeBaseCreateAction(ctx context.Context, cmd *cli.Command) error {
 	opts := knowledgebase.CreateOptions{
 		Name:          args.First(),
 		Namespace:     cmd.String("namespace"),
+		Organization:  cmd.String("organization"),
 		InputJSONFile: cmd.String("cli-input-json"),
 		InputYAMLFile: cmd.String("cli-input-yaml"),
 		RepoURL:       cmd.String("repo-url"),
 		Branch:        cmd.String("branch"),
+		SourceType:    cmd.String("source-type"),
 		DocsPath:      cmd.String("docs-path"),
 		MCPImage:      cmd.String("mcp-image"),
 		MCPPort:       int32(cmd.Int("mcp-port")),
@@ -175,7 +217,6 @@ func knowledgeBaseCreateAction(ctx context.Context, cmd *cli.Command) error {
 	log.Debugf("Creating knowledge base: %s", opts.Name)
 	return knowledgebase.Create(ctx, client, opts)
 }
-
 
 func knowledgeBaseDeleteAction(ctx context.Context, cmd *cli.Command) error {
 	log := logger.GetLogger(ctx)
@@ -201,6 +242,5 @@ func knowledgeBaseDeleteAction(ctx context.Context, cmd *cli.Command) error {
 }
 
 func knowledgeBaseGenerateSpecAction(ctx context.Context, cmd *cli.Command) error {
-	outputFormat := output.Format(cmd.String("output"))
-	return knowledgebase.GenerateSpec(ctx, outputFormat)
+	return knowledgebase.GenerateSpec(ctx, output.Format(cmd.String("output")))
 }

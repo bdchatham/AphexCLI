@@ -2,6 +2,8 @@ package secrets
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -14,6 +16,35 @@ import (
 )
 
 const orgSecretsName = "org-secrets"
+
+type InitOptions struct {
+	OrgName     string
+	GitHubToken string
+}
+
+func Init(ctx context.Context, k8sClient *k8s.Client, opts InitOptions) error {
+	password, err := generatePassword(32)
+	if err != nil {
+		return fmt.Errorf("failed to generate postgres password: %w", err)
+	}
+
+	return Set(ctx, k8sClient, SetOptions{
+		OrgName: opts.OrgName,
+		Secrets: map[string]string{
+			"github-token":    opts.GitHubToken,
+			"postgres-user":   "archon",
+			"postgres-password": password,
+		},
+	})
+}
+
+func generatePassword(length int) (string, error) {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b)[:length], nil
+}
 
 type SetOptions struct {
 	OrgName string

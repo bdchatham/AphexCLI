@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	platformv1alpha1 "github.com/bdchatham/AphexPlatformInfrastructure/platform/platform-controller/controller/api/v1alpha1"
+	platformv1alpha1 "github.com/bdchatham/AphexControllerRuntime/api/v1alpha1"
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
 	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/progress"
