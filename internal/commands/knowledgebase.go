@@ -22,6 +22,11 @@ func KnowledgeBaseCommand() *cli.Command {
 				ArgsUsage: "[name]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
+						Name:     "organization",
+						Usage:    "Organization name",
+						Required: true,
+					},
+					&cli.StringFlag{
 						Name:    "output",
 						Aliases: []string{"o"},
 						Usage:   "Output format (table, json, yaml)",
@@ -38,6 +43,10 @@ func KnowledgeBaseCommand() *cli.Command {
 				Name:  "list",
 				Usage: "List knowledge bases",
 				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "organization",
+						Usage: "Organization name (lists all if omitted)",
+					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
 						Usage: "Path to kubeconfig file",
@@ -60,10 +69,6 @@ func KnowledgeBaseCommand() *cli.Command {
 				Usage:     "Create a knowledge base",
 				ArgsUsage: "[name]",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "namespace",
-						Usage: "Namespace for the knowledge base",
-					},
 					&cli.StringFlag{
 						Name:     "organization",
 						Usage:    "Organization name (must reference an existing Organization resource)",
@@ -89,12 +94,11 @@ func KnowledgeBaseCommand() *cli.Command {
 					&cli.StringFlag{
 						Name:  "source-type",
 						Usage: "Source type (docs, code)",
-						Value: "docs",
+						Value: "code",
 					},
 					&cli.StringFlag{
-						Name:  "docs-path",
+						Name:  "path",
 						Usage: "Path within repository to process",
-						Value: ".kiro/docs",
 					},
 					&cli.StringFlag{
 						Name:  "mcp-image",
@@ -121,8 +125,9 @@ func KnowledgeBaseCommand() *cli.Command {
 				ArgsUsage: "[name]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "namespace",
-						Usage: "Namespace of the knowledge base",
+						Name:     "organization",
+						Usage:    "Organization name",
+						Required: true,
 					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
@@ -165,6 +170,7 @@ func knowledgeBaseGetAction(ctx context.Context, cmd *cli.Command) error {
 
 	return knowledgebase.Get(ctx, client, knowledgebase.GetOptions{
 		Name:         args.First(),
+		Organization: cmd.String("organization"),
 		OutputFormat: output.Format(cmd.String("output")),
 	})
 }
@@ -178,6 +184,7 @@ func knowledgeBaseListAction(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	opts := knowledgebase.ListOptions{
+		Organization: cmd.String("organization"),
 		OutputFormat: output.Format(cmd.String("output")),
 		Quiet:        cmd.Bool("quiet"),
 	}
@@ -201,14 +208,13 @@ func knowledgeBaseCreateAction(ctx context.Context, cmd *cli.Command) error {
 
 	opts := knowledgebase.CreateOptions{
 		Name:          args.First(),
-		Namespace:     cmd.String("namespace"),
 		Organization:  cmd.String("organization"),
 		InputJSONFile: cmd.String("cli-input-json"),
 		InputYAMLFile: cmd.String("cli-input-yaml"),
 		RepoURL:       cmd.String("repo-url"),
 		Branch:        cmd.String("branch"),
 		SourceType:    cmd.String("source-type"),
-		DocsPath:      cmd.String("docs-path"),
+		DocsPath:      cmd.String("path"),
 		MCPImage:      cmd.String("mcp-image"),
 		MCPPort:       int32(cmd.Int("mcp-port")),
 		MCPReplicas:   int32(cmd.Int("mcp-replicas")),
@@ -232,9 +238,9 @@ func knowledgeBaseDeleteAction(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	opts := knowledgebase.DeleteOptions{
-		Name:      args.First(),
-		Namespace: cmd.String("namespace"),
-		Force:     cmd.Bool("force"),
+		Name:         args.First(),
+		Organization: cmd.String("organization"),
+		Force:        cmd.Bool("force"),
 	}
 
 	log.Debugf("Deleting knowledge base: %s", opts.Name)

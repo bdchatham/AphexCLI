@@ -18,14 +18,18 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const platformSystemNamespace = "platform-system"
+func orgNamespace(org string) string {
+	return "org-" + org
+}
 
 type GetOptions struct {
 	Name         string
+	Organization string
 	OutputFormat output.Format
 }
 
 type ListOptions struct {
+	Organization string
 	OutputFormat output.Format
 	Quiet        bool
 }
@@ -40,8 +44,13 @@ func List(ctx context.Context, k8sClient *k8s.Client, opts ListOptions) error {
 
 	log.Debug("Listing knowledge bases...")
 
+	listOpts := &client.ListOptions{}
+	if opts.Organization != "" {
+		listOpts.Namespace = orgNamespace(opts.Organization)
+	}
+
 	kbList := &platformv1alpha1.KnowledgeBaseList{}
-	if err := aphexClient.List(ctx, kbList, &client.ListOptions{}); err != nil {
+	if err := aphexClient.List(ctx, kbList, listOpts); err != nil {
 		return k8s.FormatError(err)
 	}
 
@@ -68,11 +77,15 @@ func Get(ctx context.Context, k8sClient *k8s.Client, opts GetOptions) error {
 		return fmt.Errorf("failed to create typed client: %w", err)
 	}
 
+	if opts.Organization == "" {
+		return fmt.Errorf("--organization is required")
+	}
+
 	kb := &platformv1alpha1.KnowledgeBase{}
-	key := client.ObjectKey{Name: opts.Name, Namespace: platformSystemNamespace}
+	key := client.ObjectKey{Name: opts.Name, Namespace: orgNamespace(opts.Organization)}
 	if err := aphexClient.Get(ctx, key, kb); err != nil {
 		if errors.IsNotFound(err) {
-			return fmt.Errorf("knowledge base %q not found", opts.Name)
+			return fmt.Errorf("knowledge base %q not found in organization %q", opts.Name, opts.Organization)
 		}
 		return k8s.FormatError(err)
 	}
@@ -89,7 +102,6 @@ func Get(ctx context.Context, k8sClient *k8s.Client, opts GetOptions) error {
 
 type CreateOptions struct {
 	Name          string
-	Namespace     string
 	Organization  string
 	InputJSONFile string
 	InputYAMLFile string
@@ -135,15 +147,10 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 			sourceType = "code"
 		}
 
-		namespace := opts.Namespace
-		if namespace == "" {
-			namespace = platformSystemNamespace
-		}
-
 		kb = &platformv1alpha1.KnowledgeBase{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      opts.Name,
-				Namespace: namespace,
+				Namespace: orgNamespace(opts.Organization),
 			},
 			Spec: platformv1alpha1.KnowledgeBaseSpec{
 				Name:         opts.Name,
@@ -170,7 +177,11 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 		}
 	}
 
-	log.Debugf("Creating KnowledgeBase %q in namespace %q", kb.Name, kb.Namespace)
+	if kb.Namespace == "" && kb.Spec.Organization != "" {
+		kb.Namespace = orgNamespace(kb.Spec.Organization)
+	}
+
+	log.Debugf("Creating KnowledgeBase %q in organization %q", kb.Name, kb.Spec.Organization)
 
 	err = progress.WithSpinner(fmt.Sprintf("Creating knowledge base %q", kb.Name), func() error {
 		return aphexClient.Create(ctx, kb)
@@ -189,7 +200,7 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 	readyKB, err := waitForReady(ctx, aphexClient, kb.Name, kb.Namespace)
 	if err != nil {
 		fmt.Printf("\nStatus polling failed: %v\n", err)
-		fmt.Printf("Check status with: aphex knowledgebase get %s\n", kb.Name)
+		fmt.Printf("Check status with: aphex knowledgebase get %s --organization %s\n", kb.Name, kb.Spec.Organization)
 		return nil
 	}
 
@@ -200,9 +211,9 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 }
 
 type DeleteOptions struct {
-	Name      string
-	Namespace string
-	Force     bool
+	Name         string
+	Organization string
+	Force        bool
 }
 
 func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) error {
@@ -213,17 +224,22 @@ func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) erro
 		return fmt.Errorf("failed to create typed client: %w", err)
 	}
 
+	if opts.Organization == "" {
+		return fmt.Errorf("--organization is required")
+	}
+
+	ns := orgNamespace(opts.Organization)
 	kb := &platformv1alpha1.KnowledgeBase{}
-	key := client.ObjectKey{Name: opts.Name, Namespace: opts.Namespace}
+	key := client.ObjectKey{Name: opts.Name, Namespace: ns}
 	if err := aphexClient.Get(ctx, key, kb); err != nil {
 		if errors.IsNotFound(err) {
-			return fmt.Errorf("knowledge base %q not found in namespace %q", opts.Name, opts.Namespace)
+			return fmt.Errorf("knowledge base %q not found in organization %q", opts.Name, opts.Organization)
 		}
 		return k8s.FormatError(err)
 	}
 
 	if !opts.Force {
-		fmt.Printf("This will delete knowledge base %q in namespace %q\n", opts.Name, opts.Namespace)
+		fmt.Printf("This will delete knowledge base %q in organization %q\n", opts.Name, opts.Organization)
 		fmt.Printf("\nTracked sources:\n")
 		for _, source := range kb.Spec.Sources {
 			fmt.Printf("  - %s (branch: %s, type: %s)\n", source.URL, source.Branch, source.SourceType)
@@ -238,7 +254,7 @@ func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) erro
 		}
 	}
 
-	log.Debugf("Deleting KnowledgeBase %q from namespace %q", opts.Name, opts.Namespace)
+	log.Debugf("Deleting KnowledgeBase %q from organization %q", opts.Name, opts.Organization)
 
 	err = progress.WithSpinner(fmt.Sprintf("Deleting knowledge base %q", opts.Name), func() error {
 		return aphexClient.Delete(ctx, kb)
@@ -258,8 +274,7 @@ func GenerateSpec(ctx context.Context, format output.Format) error {
 			Kind:       "KnowledgeBase",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-kb",
-			Namespace: "org-example",
+			Name: "example-kb",
 		},
 		Spec: platformv1alpha1.KnowledgeBaseSpec{
 			Name:         "Example Knowledge Base",
@@ -267,14 +282,13 @@ func GenerateSpec(ctx context.Context, format output.Format) error {
 			Sources: []platformv1alpha1.Source{
 				{
 					URL:        "https://github.com/org/repo",
-					Branch:     "main",
-					SourceType: "docs",
-					Paths:      []string{".kiro/docs"},
+					Branch:     "mainline",
+					SourceType: "code",
 				},
 			},
 			MCP: &platformv1alpha1.MCPConfig{
 				Image:    "ghcr.io/bdchatham/archon-mcp-server:latest",
-				Port:     8090,
+				Port:     3000,
 				Replicas: 1,
 			},
 		},
