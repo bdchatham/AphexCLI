@@ -78,9 +78,9 @@ func FormatOrganizations(orgs []platformv1alpha1.Organization, format string, qu
 			return nil
 		}
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-		fmt.Fprintln(w, "NAME\tDISPLAY NAME\tNAMESPACE\tPHASE\tADMIN USERS")
+		_, _ = fmt.Fprintln(w, "NAME\tDISPLAY NAME\tNAMESPACE\tPHASE\tADMIN USERS")
 		for _, info := range infos {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 				info.Name, info.DisplayName, info.Namespace, info.Phase,
 				strings.Join(info.AdminUsers, ", "))
 		}

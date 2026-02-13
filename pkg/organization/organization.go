@@ -147,8 +147,7 @@ func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) erro
 		fmt.Printf("\nThis action cannot be undone. Continue? (y/N): ")
 
 		var response string
-		fmt.Scanln(&response)
-		if response != "y" && response != "Y" && response != "yes" && response != "Yes" {
+		if _, err := fmt.Scanln(&response); err != nil || (response != "y" && response != "Y" && response != "yes" && response != "Yes") {
 			fmt.Println("Operation cancelled")
 			return nil
 		}

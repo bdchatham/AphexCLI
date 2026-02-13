@@ -152,8 +152,7 @@ func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) erro
 	if !opts.Force {
 		fmt.Printf("Are you sure you want to delete agent %s? (y/N): ", opts.Name)
 		var response string
-		fmt.Scanln(&response)
-		if response != "y" && response != "Y" {
+		if _, err := fmt.Scanln(&response); err != nil || (response != "y" && response != "Y") {
 			fmt.Println("Deletion cancelled")
 			return nil
 		}

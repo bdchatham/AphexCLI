@@ -102,7 +102,9 @@ func secretsInitAction(ctx context.Context, cmd *cli.Command) error {
 
 	if githubToken == "" {
 		fmt.Print("GitHub personal access token: ")
-		fmt.Scanln(&githubToken)
+		if _, err := fmt.Scanln(&githubToken); err != nil {
+			return fmt.Errorf("failed to read token: %w", err)
+		}
 		if githubToken == "" {
 			return fmt.Errorf("github token is required")
 		}

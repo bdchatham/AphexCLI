@@ -55,10 +55,10 @@ func formatStatusError(statusErr *errors.StatusError) error {
 	case 422:
 		return fmt.Errorf("invalid resource definition: %s", status.Message)
 	case 500:
-		return fmt.Errorf("Kubernetes API server error - try again later or contact platform administrators")
+		return fmt.Errorf("kubernetes API server error - try again later or contact platform administrators")
 	case 503:
-		return fmt.Errorf("Kubernetes API server unavailable - try again later")
+		return fmt.Errorf("kubernetes API server unavailable - try again later")
 	default:
-		return fmt.Errorf("Kubernetes API error (%d): %s", status.Code, status.Message)
+		return fmt.Errorf("kubernetes API error (%d): %s", status.Code, status.Message)
 	}
 }

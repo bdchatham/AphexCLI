@@ -52,7 +52,7 @@ macOS: brew install Azure/kubelogin/kubelogin
 Linux: Download from https://github.com/Azure/kubelogin/releases
 Windows: Download from https://github.com/Azure/kubelogin/releases
 
-After installation, run 'aphex auth login' again.`)
+After installation, run 'aphex auth login' again`)
 	}
 	return nil
 }

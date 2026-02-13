@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -94,44 +92,4 @@ func getCurrentGroups() []string {
 	// For now, return empty slice as placeholder
 	// The actual implementation would require JWT parsing
 	return []string{}
-}
-
-// parseJWTGroups parses groups from a JWT token (placeholder implementation)
-func parseJWTGroups(token string) ([]string, error) {
-	// Split JWT token into parts
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("invalid JWT token format")
-	}
-	
-	// Decode payload (second part)
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode JWT payload: %w", err)
-	}
-	
-	// Parse JSON payload
-	var claims map[string]interface{}
-	if err := json.Unmarshal(payload, &claims); err != nil {
-		return nil, fmt.Errorf("failed to parse JWT claims: %w", err)
-	}
-	
-	// Extract groups claim
-	groupsClaim, exists := claims["groups"]
-	if !exists {
-		return []string{}, nil
-	}
-	
-	// Convert to string slice
-	if groupsSlice, ok := groupsClaim.([]interface{}); ok {
-		var groups []string
-		for _, group := range groupsSlice {
-			if groupStr, ok := group.(string); ok {
-				groups = append(groups, groupStr)
-			}
-		}
-		return groups, nil
-	}
-	
-	return []string{}, nil
 }

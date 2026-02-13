@@ -27,7 +27,7 @@ func formatTable(agents []platformv1alpha1.Agent, quiet bool) error {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "NAME\tNAMESPACE\tMODEL\tPHASE\tORCHESTRATOR")
+	_, _ = fmt.Fprintln(w, "NAME\tNAMESPACE\tMODEL\tPHASE\tORCHESTRATOR")
 
 	for _, agent := range agents {
 		phase := agent.Status.Phase
@@ -40,7 +40,7 @@ func formatTable(agents []platformv1alpha1.Agent, quiet bool) error {
 			orchestrator = "Yes"
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			agent.Name,
 			agent.Namespace,
 			agent.Spec.Model.Name,

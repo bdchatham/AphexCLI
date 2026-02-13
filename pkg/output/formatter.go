@@ -79,10 +79,10 @@ func formatYAML(pipelines []PipelineInfo) error {
 
 func formatTable(pipelines []PipelineInfo) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "NAMESPACE\tNAME\tCREATED")
+	_, _ = fmt.Fprintln(w, "NAMESPACE\tNAME\tCREATED")
 
 	for _, pipeline := range pipelines {
-		fmt.Fprintf(w, "%s\t%s\t%s\n", pipeline.Namespace, pipeline.Name, pipeline.Created)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", pipeline.Namespace, pipeline.Name, pipeline.Created)
 	}
 
 	return w.Flush()
@@ -129,9 +129,9 @@ func FormatRepoBindings(bindings []platformv1alpha1.RepoBinding, opts Options) e
 		return nil
 	default:
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-		fmt.Fprintln(w, "NAME\tORGANIZATION\tREPO\tPHASE")
+		_, _ = fmt.Fprintln(w, "NAME\tORGANIZATION\tREPO\tPHASE")
 		for _, info := range infos {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", info.Name, info.Organization, info.Repo, info.Phase)
+			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", info.Name, info.Organization, info.Repo, info.Phase)
 		}
 		return w.Flush()
 	}

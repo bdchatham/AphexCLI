@@ -26,6 +26,7 @@ func TestNewLogger(t *testing.T) {
 			logger := NewLogger(tt.level)
 			if logger == nil {
 				t.Error("NewLogger returned nil")
+				return
 			}
 			if logger.slog == nil {
 				t.Error("Logger's slog field is nil")

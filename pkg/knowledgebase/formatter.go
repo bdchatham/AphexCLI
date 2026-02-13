@@ -27,14 +27,14 @@ func formatTable(kbs []platformv1alpha1.KnowledgeBase, quiet bool) error {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "NAME\tNAMESPACE\tORGANIZATION\tSOURCES\tPHASE")
+	_, _ = fmt.Fprintln(w, "NAME\tNAMESPACE\tORGANIZATION\tSOURCES\tPHASE")
 
 	for _, kb := range kbs {
 		phase := kb.Status.Phase
 		if phase == "" {
 			phase = "Pending"
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
 			kb.Name, kb.Namespace, kb.Spec.Organization,
 			len(kb.Spec.Sources), phase)
 	}
