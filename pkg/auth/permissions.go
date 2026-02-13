@@ -24,19 +24,17 @@ func (e *PermissionError) Error() string {
 }
 
 // CheckPermission performs a SelfSubjectAccessReview to verify user permissions
-func CheckPermission(ctx context.Context, client *k8s.Client, resource, verb, namespace string) error {
-	// Create context with timeout to prevent hanging
+func CheckPermission(ctx context.Context, client *k8s.Client, resource, verb, namespace, group string) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	// Create SelfSubjectAccessReview
 	sar := &authv1.SelfSubjectAccessReview{
 		Spec: authv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authv1.ResourceAttributes{
 				Namespace: namespace,
 				Verb:      verb,
-				Group:     "tekton.dev",
-				Version:   "v1",
+				Group:     group,
+				Version:   "v1alpha1",
 				Resource:  resource,
 			},
 		},
@@ -63,14 +61,14 @@ func CheckPermission(ctx context.Context, client *k8s.Client, resource, verb, na
 	return nil
 }
 
-// CheckPipelineCreate checks permissions for pipeline creation
+// CheckPipelineCreate checks permissions for pipeline creation in the org namespace
 func CheckPipelineCreate(ctx context.Context, client *k8s.Client, namespace string) error {
-	return CheckPermission(ctx, client, "pipelines", "create", namespace)
+	return CheckPermission(ctx, client, "repobindings", "create", namespace, "aphex.io")
 }
 
-// CheckPipelineDelete checks permissions for pipeline deletion
+// CheckPipelineDelete checks permissions for pipeline deletion in the org namespace
 func CheckPipelineDelete(ctx context.Context, client *k8s.Client, namespace string) error {
-	return CheckPermission(ctx, client, "pipelines", "delete", namespace)
+	return CheckPermission(ctx, client, "repobindings", "delete", namespace, "aphex.io")
 }
 
 // CheckOrganizationBootstrap checks permissions for organization bootstrapping

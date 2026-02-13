@@ -2,51 +2,43 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 
+	platformv1alpha1 "github.com/bdchatham/AphexControllerRuntime/api/v1alpha1"
 	"github.com/bdchatham/AphexCLI/pkg/k8s"
-	"github.com/bdchatham/AphexCLI/pkg/logger"
 	"github.com/bdchatham/AphexCLI/pkg/output"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ListOptions struct {
+	Organization string
 	OutputFormat output.Format
 	Quiet        bool
 }
 
 func List(ctx context.Context, k8sClient *k8s.Client, opts ListOptions) error {
-	log := logger.GetLogger(ctx)
-	
 	aphexClient, err := k8s.NewAphexClient(k8sClient.Config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create client: %w", err)
 	}
 
-	namespaceList := &corev1.NamespaceList{}
-	if err := aphexClient.List(ctx, namespaceList); err != nil {
-		return k8s.FormatError(err)
-	}
+	repoBindings := &platformv1alpha1.RepoBindingList{}
 
-	log.Debugf("Listing pipelines across all namespaces")
-
-	var allPipelines []tektonv1.Pipeline
-	
-	for _, ns := range namespaceList.Items {
-		pipelineList := &tektonv1.PipelineList{}
-		if err := aphexClient.List(ctx, pipelineList, client.InNamespace(ns.Name)); err != nil {
-			log.Debugf("Skipping namespace %q: %v", ns.Name, err)
-			continue
+	if opts.Organization != "" {
+		namespace := orgNamespace(opts.Organization)
+		if err := aphexClient.List(ctx, repoBindings, client.InNamespace(namespace)); err != nil {
+			return k8s.FormatError(err)
 		}
-
-		allPipelines = append(allPipelines, pipelineList.Items...)
+	} else {
+		if err := aphexClient.List(ctx, repoBindings); err != nil {
+			return k8s.FormatError(err)
+		}
 	}
 
 	outputOpts := output.Options{
 		Format: opts.OutputFormat,
 		Quiet:  opts.Quiet,
 	}
-	
-	return output.FormatPipelines(allPipelines, outputOpts)
+
+	return output.FormatRepoBindings(repoBindings.Items, outputOpts)
 }

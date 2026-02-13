@@ -11,11 +11,10 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// PipelineCommand returns the pipeline command with subcommands
 func PipelineCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "pipeline",
-		Usage: "Pipeline management",
+		Name:   "pipeline",
+		Usage:  "Pipeline management",
 		Before: pipelineBeforeAction,
 		Commands: []*cli.Command{
 			{
@@ -30,7 +29,7 @@ func PipelineCommand() *cli.Command {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     "aphex-org",
+						Name:     "organization",
 						Usage:    "Aphex organization name",
 						Required: true,
 					},
@@ -40,7 +39,7 @@ func PipelineCommand() *cli.Command {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     "repo-name", 
+						Name:     "repo-name",
 						Usage:    "GitHub repository name",
 						Required: true,
 					},
@@ -63,6 +62,11 @@ func PipelineCommand() *cli.Command {
 				ArgsUsage: "[name]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
+						Name:     "organization",
+						Usage:    "Aphex organization name",
+						Required: true,
+					},
+					&cli.StringFlag{
 						Name:  "kubeconfig",
 						Usage: "Path to kubeconfig file",
 					},
@@ -80,9 +84,13 @@ func PipelineCommand() *cli.Command {
 				Action: pipelineDeleteAction,
 			},
 			{
-				Name:      "list",
-				Usage:     "List pipeline instances",
+				Name:  "list",
+				Usage: "List pipeline instances",
 				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "organization",
+						Usage: "Aphex organization name (lists all if omitted)",
+					},
 					&cli.StringFlag{
 						Name:  "kubeconfig",
 						Usage: "Path to kubeconfig file",
@@ -105,30 +113,26 @@ func PipelineCommand() *cli.Command {
 }
 
 func pipelineBeforeAction(ctx context.Context, cmd *cli.Command) error {
-	// Skip preflight checks for read-only operations
 	subcommand := cmd.Args().First()
 	if subcommand == "list" {
 		return nil
 	}
 
-	// Only check permissions for create/delete operations
 	if subcommand != "create" && subcommand != "delete" {
 		return nil
 	}
 
-	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// Get namespace (use default if not specified)
-	namespace := cmd.String("namespace")
-	if namespace == "" {
-		namespace = client.Namespace
+	org := cmd.String("organization")
+	if org == "" {
+		return nil
 	}
+	namespace := "org-" + org
 
-	// Perform preflight authorization check
 	switch subcommand {
 	case "create":
 		return auth.CheckPipelineCreate(ctx, client, namespace)
@@ -140,70 +144,52 @@ func pipelineBeforeAction(ctx context.Context, cmd *cli.Command) error {
 }
 
 func pipelineCreateAction(ctx context.Context, cmd *cli.Command) error {
-	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// Get pipeline name from arguments
 	args := cmd.Args()
 	if args.Len() == 0 {
 		return fmt.Errorf("pipeline name is required as argument")
 	}
 
-	// Create pipeline
-	opts := pipeline.CreateOptions{
-		Name:        args.First(),
-		FilePath:    cmd.String("file"),
-		AphexOrg:    cmd.String("aphex-org"),
-		RepoOrg:     cmd.String("repo-org"),
-		RepoName:    cmd.String("repo-name"),
-		TenantName:  args.First(), // Same as pipeline name
-		IngressHost: "webhooks.homelab.local", // Hardcoded
-	}
-
-	return pipeline.Create(ctx, client, opts)
+	return pipeline.Create(ctx, client, pipeline.CreateOptions{
+		Name:         args.First(),
+		FilePath:     cmd.String("file"),
+		Organization: cmd.String("organization"),
+		RepoOrg:      cmd.String("repo-org"),
+		RepoName:     cmd.String("repo-name"),
+	})
 }
 
 func pipelineDeleteAction(ctx context.Context, cmd *cli.Command) error {
-	// Get pipeline name from arguments
 	args := cmd.Args()
 	if args.Len() == 0 {
 		return fmt.Errorf("pipeline name is required")
 	}
-	pipelineName := args.First()
 
-	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// Delete pipeline
-	opts := pipeline.DeleteOptions{
-		Name:  pipelineName,
-		Force: cmd.Bool("force"),
-	}
-
-	return pipeline.Delete(ctx, client, opts)
+	return pipeline.Delete(ctx, client, pipeline.DeleteOptions{
+		Name:         args.First(),
+		Organization: cmd.String("organization"),
+		Force:        cmd.Bool("force"),
+	})
 }
 
 func pipelineListAction(ctx context.Context, cmd *cli.Command) error {
-	// Create Kubernetes client
 	client, err := k8s.NewClient(cmd.String("kubeconfig"))
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	// Parse output format
-	outputFormat := output.Format(cmd.String("output"))
-	
-	// List pipelines
-	opts := pipeline.ListOptions{
-		OutputFormat: outputFormat,
+	return pipeline.List(ctx, client, pipeline.ListOptions{
+		Organization: cmd.String("organization"),
+		OutputFormat: output.Format(cmd.String("output")),
 		Quiet:        cmd.Bool("quiet"),
-	}
-
-	return pipeline.List(ctx, client, opts)
+	})
 }
