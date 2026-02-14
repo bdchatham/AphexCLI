@@ -83,8 +83,12 @@ func KnowledgeBaseCommand() *cli.Command {
 						Usage: "Path to YAML file with complete knowledge base specification",
 					},
 					&cli.StringFlag{
-						Name:  "repo-url",
-						Usage: "Repository URL (any Git provider)",
+						Name:  "repo-org",
+						Usage: "Repository organization or owner",
+					},
+					&cli.StringFlag{
+						Name:  "repo-name",
+						Usage: "Repository name",
 					},
 					&cli.StringFlag{
 						Name:  "branch",
@@ -211,7 +215,8 @@ func knowledgeBaseCreateAction(ctx context.Context, cmd *cli.Command) error {
 		Organization:  cmd.String("organization"),
 		InputJSONFile: cmd.String("cli-input-json"),
 		InputYAMLFile: cmd.String("cli-input-yaml"),
-		RepoURL:       cmd.String("repo-url"),
+		RepoOrg:       cmd.String("repo-org"),
+		RepoName:      cmd.String("repo-name"),
 		Branch:        cmd.String("branch"),
 		SourceType:    cmd.String("source-type"),
 		DocsPath:      cmd.String("path"),

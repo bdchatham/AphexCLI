@@ -105,7 +105,8 @@ type CreateOptions struct {
 	Organization  string
 	InputJSONFile string
 	InputYAMLFile string
-	RepoURL       string
+	RepoOrg       string
+	RepoName      string
 	Branch        string
 	SourceType    string
 	DocsPath      string
@@ -135,8 +136,8 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 			return fmt.Errorf("failed to load knowledge base from YAML: %w", err)
 		}
 	} else {
-		if opts.RepoURL == "" {
-			return fmt.Errorf("--repo-url is required when not using --cli-input-json/--cli-input-yaml")
+		if opts.RepoOrg == "" || opts.RepoName == "" {
+			return fmt.Errorf("--repo-org and --repo-name are required when not using --cli-input-json/--cli-input-yaml")
 		}
 		if opts.Organization == "" {
 			return fmt.Errorf("--organization is required")
@@ -157,7 +158,8 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 				Organization: opts.Organization,
 				Sources: []platformv1alpha1.Source{
 					{
-						URL:        opts.RepoURL,
+						RepoOrg:    opts.RepoOrg,
+						RepoName:   opts.RepoName,
 						Branch:     opts.Branch,
 						SourceType: sourceType,
 						Paths:      []string{opts.DocsPath},
@@ -194,7 +196,7 @@ func Create(ctx context.Context, k8sClient *k8s.Client, opts CreateOptions) erro
 	fmt.Printf("Organization: %s\n", kb.Spec.Organization)
 	fmt.Printf("Sources: %d\n", len(kb.Spec.Sources))
 	for i, source := range kb.Spec.Sources {
-		fmt.Printf("  [%d] %s (branch: %s, type: %s)\n", i+1, source.URL, source.Branch, source.SourceType)
+		fmt.Printf("  [%d] %s (branch: %s, type: %s)\n", i+1, source.FullName(), source.Branch, source.SourceType)
 	}
 
 	readyKB, err := waitForReady(ctx, aphexClient, kb.Name, kb.Namespace)
@@ -242,7 +244,7 @@ func Delete(ctx context.Context, k8sClient *k8s.Client, opts DeleteOptions) erro
 		fmt.Printf("This will delete knowledge base %q in organization %q\n", opts.Name, opts.Organization)
 		fmt.Printf("\nTracked sources:\n")
 		for _, source := range kb.Spec.Sources {
-			fmt.Printf("  - %s (branch: %s, type: %s)\n", source.URL, source.Branch, source.SourceType)
+			fmt.Printf("  - %s (branch: %s, type: %s)\n", source.FullName(), source.Branch, source.SourceType)
 		}
 		fmt.Printf("\nThis action cannot be undone. Continue? (y/N): ")
 
@@ -280,7 +282,8 @@ func GenerateSpec(ctx context.Context, format output.Format) error {
 			Organization: "example",
 			Sources: []platformv1alpha1.Source{
 				{
-					URL:        "https://github.com/org/repo",
+					RepoOrg:    "org",
+					RepoName:   "repo",
 					Branch:     "mainline",
 					SourceType: "code",
 				},

@@ -54,8 +54,8 @@ github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137/go.mod h1:OMCwj8V
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8TVTI=
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
-github.com/bdchatham/AphexControllerRuntime v0.2.0 h1:YdMvpDIDyfEKyTrO1MloNGGHAv6rvzg+ztqQPKD4DXQ=
-github.com/bdchatham/AphexControllerRuntime v0.2.0/go.mod h1:XM1jVn58HE2yqntpjT8nq+IRgPjlH1q1UHj4vr1LO74=
+github.com/bdchatham/AphexControllerRuntime v0.2.1-0.20260214172948-6ef542f93cfb h1:mTQyDdbB54n2oPDBIjq559lwB/ZqbMcVP/u2ZtWctTo=
+github.com/bdchatham/AphexControllerRuntime v0.2.1-0.20260214172948-6ef542f93cfb/go.mod h1:Cv81ookMnmy2wWLjm8yrmxYYL6qzEwVCvVdfssgRz8Q=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
