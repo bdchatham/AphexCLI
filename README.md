@@ -229,3 +229,4 @@ See `CLAUDE.md` for the complete documentation contract.
 ## License
 
 MIT
+
